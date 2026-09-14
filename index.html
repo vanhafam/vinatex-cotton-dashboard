@@ -1,0 +1,2069 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Trạm Quan sát Bông &amp; Xơ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ============================================================
+   Trạm Quan sát Bông & Xơ — theme v2 (03_ui_design.md §1)
+   Hệ 2 MẶT PHẲNG: giấy (#F4EFE2, khung/điều hướng) — panel (#16283C, dữ liệu).
+   Token khai báo MỘT LẦN trong :root; 2 scope class .on-paper/.on-panel chỉ ALIAS.
+   Single look chủ đích: KHÔNG @media prefers-color-scheme, KHÔNG [data-theme].
+   ============================================================ */
+:root{
+  --font-display:'Newsreader','Iowan Old Style',Georgia,'Times New Roman',serif;
+  --font-ui:'Be Vietnam Pro','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono',Consolas,'SFMono-Regular',monospace;
+  --nav-w:240px; --h-header:56px; --h-topbar:56px; --h-subtab:44px;
+  --lift-panel:0 1px 1px rgba(14,30,51,.06), 0 12px 28px -18px rgba(14,30,51,.45);
+  --lift-menu:0 2px 4px rgba(14,30,51,.10), 0 18px 40px -20px rgba(14,30,51,.55);
+
+  /* --- mặt phẳng GIẤY (§1.1) --- */
+  --paper:#F4EFE2; --paper-2:#EAE3D2; --paper-3:#E2D9C4;
+  --hair-paper:#DCD2BC; --rule-paper:#C6BAA0;
+  --ink1-paper:#14202E; --ink2-paper:#41505F; --ink3-paper:#5E6B78;
+  --accent-paper:#0E1E33; --wash-paper:rgba(14,30,51,.07);
+  --good-paper:#1A7A45; --bad-paper:#C43A22;
+
+  /* --- mặt phẳng PANEL (§1.2) — cũng là "chart surface" của mọi biểu đồ --- */
+  --panel:#16283C; --panel-2:#22374E; --panel-inset:#101F31;
+  --hair-panel:#24384F; --rule-panel:#2A3F5A; --grid-panel:#22344C;
+  --ink1-panel:#E9F0F8; --ink2-panel:#A8BACE; --ink3-panel:#8698AE;
+  --accent-panel:#E6D8B8; --wash-panel:rgba(230,216,184,.14);
+  --good-panel:#54D98C; --bad-panel:#F0625E;
+
+  /* --- dữ liệu: không phụ thuộc mặt phẳng (§1.6–1.8) --- */
+  --series-1:#4A8FE0; --series-2:#DD6A2F; --series-3:#17A578;
+  --series-4:#C98500; --series-5:#D66C99; --series-6:#9085E9;
+  --ice-1:#2A78D6; --ice-2:#5598E7; --ice-3:#86B6EF; --ice-4:#B7D3F6;
+  --ms-1:#F0E4C6; --ms-2:#C8B99A; --ms-3:#9C927E;
+  --fc-band:rgba(74,143,224,.16); --fc-center:#86B6EF;
+  --fc-hatch:rgba(233,240,248,.06); --anchor:#E6D8B8;
+}
+.on-paper{
+  --bg:var(--paper); --bg-2:var(--paper-2); --bg-3:var(--paper-3);
+  --hair:var(--hair-paper); --rule:var(--rule-paper);
+  --ink-1:var(--ink1-paper); --ink-2:var(--ink2-paper); --ink-3:var(--ink3-paper);
+  --accent:var(--accent-paper); --accent-wash:var(--wash-paper);
+  --st-good:var(--good-paper); --st-bad:var(--bad-paper);
+  --st-good-wash:rgba(26,122,69,.12); --st-bad-wash:rgba(196,58,34,.12);
+  --st-good-line:rgba(26,122,69,.38); --st-bad-line:rgba(196,58,34,.38);
+  --on-accent:#F4EFE2;
+}
+.on-panel{
+  --bg:var(--panel); --bg-2:var(--panel-2); --bg-3:var(--panel-inset);
+  --hair:var(--hair-panel); --rule:var(--rule-panel);
+  --ink-1:var(--ink1-panel); --ink-2:var(--ink2-panel); --ink-3:var(--ink3-panel);
+  --accent:var(--accent-panel); --accent-wash:var(--wash-panel);
+  --st-good:var(--good-panel); --st-bad:var(--bad-panel);
+  --st-good-wash:rgba(84,217,140,.12); --st-bad-wash:rgba(240,98,94,.12);
+  --st-good-line:rgba(84,217,140,.38); --st-bad-line:rgba(240,98,94,.38);
+  --on-accent:#101F31;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink2-paper);font-family:var(--font-ui);
+  font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%}
+p{margin:0}
+h1,h2,h3,h4{margin:0;color:var(--ink-1);text-wrap:balance}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- topbar / snapshot bar (§4.1) ---------- */
+.topbar{position:sticky;top:0;z-index:60;background:var(--bg);border-bottom:1px solid var(--rule)}
+.snapshot-bar{height:var(--h-header);display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:0 32px 0 calc(var(--nav-w) + 32px)}
+.wordmark{display:block;font-family:var(--font-display);font-size:23px;font-weight:700;
+  line-height:1.2;color:var(--ink-1)}
+.sb-sub{display:block;font-size:12px;line-height:1.3;color:var(--ink-3)}
+.sb-snap{display:flex;align-items:center;gap:10px;position:relative}
+.sb-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.sb-date{font-size:14px;font-weight:600;color:var(--ink-1)}
+.sb-pick,.sb-refresh{background:var(--bg-2);border:1px solid var(--rule);border-radius:4px;
+  color:var(--ink-1);transition:background-color 120ms ease}
+.sb-pick{padding:6px 10px;font-size:12.5px;font-weight:500;white-space:nowrap}
+.sb-pick:hover,.sb-refresh:hover{background:var(--bg-3)}
+.sb-refresh{width:30px;height:30px;font-size:14px;line-height:1}
+.sb-refresh[aria-busy="true"] .g{display:inline-block;animation:spin 900ms linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sb-pick.is-history{background:var(--accent);color:#E9F0F8;border-color:var(--accent)}
+.sb-done{font-size:11px;color:var(--ink-3);white-space:nowrap}
+.snapshot-menu{position:absolute;top:38px;right:0;min-width:320px;max-height:340px;overflow-y:auto;
+  background:var(--bg);border:1px solid var(--rule);border-radius:6px;
+  box-shadow:var(--lift-menu);z-index:80}
+.sm-hd{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-3);padding:10px 14px 6px}
+.sm-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;width:100%;
+  padding:9px 14px;border-top:1px solid var(--hair);text-align:left}
+.sm-row:hover{background:var(--bg-2)}
+.sm-date{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--ink-1)}
+.sm-tag{font-size:12px;color:var(--ink-2)}
+.sm-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:7px}
+.sm-empty{padding:12px 14px;font-size:12.5px;color:var(--ink-3)}
+.history-ribbon{min-height:40px;background:var(--bg);border-left:4px solid var(--accent);
+  display:flex;align-items:center;gap:12px;padding:6px 20px 6px 16px;color:var(--ink-2);font-size:13px}
+.history-ribbon .mono{color:var(--ink-1)}
+.hr-glyph{color:var(--accent);font-family:var(--font-mono)}
+.hr-back{margin-left:auto;border:1px solid var(--accent);color:var(--accent);
+  font-size:12.5px;font-weight:600;border-radius:4px;padding:5px 12px;white-space:nowrap}
+.hr-back:hover{background:var(--accent-wash)}
+
+/* ---------- sidebar ---------- */
+.sidebar{position:fixed;top:0;left:0;width:var(--nav-w);height:100%;background:var(--bg);
+  border-right:1px solid var(--rule);padding:calc(var(--h-header) + 22px) 12px 20px;z-index:70}
+.side-graphic{margin:0 6px 16px;border-radius:8px;overflow:hidden;background:var(--panel)}
+.side-graphic svg{display:block;width:100%;height:auto}
+.side-eyebrow{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);padding:0 14px 8px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:9px;min-height:44px;width:100%;padding:11px 14px;
+  border-radius:4px;font-size:13px;font-weight:600;color:var(--ink-2);text-align:left;
+  transition:background-color 120ms ease}
+.nav button:hover{background:var(--bg-2)}
+.nav button.is-active{background:var(--accent);color:#E9F0F8}
+.nav .n{font-family:var(--font-mono);font-size:11px;opacity:.75}
+.side-foot{position:absolute;left:12px;right:12px;bottom:18px;font-size:11px;line-height:1.5;
+  color:var(--ink-3);border-top:1px solid var(--hair);padding-top:10px}
+.side-foot .mono{display:block;color:var(--ink-2);padding-left:13px;position:relative;margin-top:4px}
+.side-foot .mono::before{content:"•";position:absolute;left:0;color:var(--ink-3)}
+
+/* ---------- sub-tab ---------- */
+.subtabs{position:sticky;top:var(--h-topbar);z-index:50;background:var(--paper);
+  border-bottom:1px solid var(--rule-paper);display:flex;gap:2px;overflow-x:auto;
+  height:var(--h-subtab);align-items:stretch;padding:0 32px 0 calc(var(--nav-w) + 32px)}
+.subtabs button{border-bottom:2px solid transparent;padding:0 14px;font-size:13px;font-weight:600;
+  color:var(--ink-2);white-space:nowrap;transition:background-color 120ms ease,color 120ms ease}
+.subtabs button.is-active{color:var(--ink-1);border-bottom-color:var(--accent);background:var(--accent-wash)}
+
+/* ---------- vùng nội dung ---------- */
+main{margin-left:var(--nav-w)}
+.wrap{max-width:1280px;margin-inline:auto;padding:20px 32px 72px}
+.page-eyebrow{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--accent-paper)}
+h1{font-family:var(--font-display);font-size:27px;line-height:1.2;font-weight:600;
+  margin:4px 0 6px;color:var(--ink1-paper)}
+.page-q{font-size:14px;line-height:1.55;color:var(--ink2-paper);max-width:68ch;margin:0 0 6px}
+.frame-label{font-size:11.5px;line-height:1.5;color:var(--ink3-paper);margin:0 0 16px;max-width:80ch}
+.frame-label b{color:var(--ink2-paper)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s6{grid-column:span 6}.s4{grid-column:span 4}
+
+/* ---------- panel (§4.4) — không viền, có bóng ---------- */
+.panel{background:var(--bg);border-radius:6px;padding:18px 20px;box-shadow:var(--lift-panel);
+  color:var(--ink-2);min-width:0}
+.panel h3{font:600 15px/1.35 var(--font-ui);color:var(--ink-1)}
+.unit{font-family:var(--font-mono);font-size:11px;font-weight:400;color:var(--ink-3);margin-left:6px}
+.cadence{font-size:11.5px;line-height:1.45;color:var(--ink-3);margin:5px 0 14px}
+.cadence .mono{color:var(--ink-2)}
+.cadence .sep{opacity:.6;padding:0 4px}
+.src-link{color:var(--ink-2);text-decoration:underline dotted 1px;text-underline-offset:2px}
+.src-link:hover{color:var(--accent)}
+.src-arrow{font-size:10px;margin-left:2px}
+.chart-note{font-size:11.5px;line-height:1.5;color:var(--ink-3);margin:10px 0 0;max-width:82ch}
+.chart-note b{color:var(--ink-2)}
+.chart-wrap{position:relative;overflow-x:auto}
+.empty{background:var(--bg-3);border:1px dashed var(--rule);border-radius:6px;padding:22px;
+  text-align:center;font-size:13px;color:var(--ink-3)}
+.panel-missing{text-align:center;color:var(--ink-3);font-size:13px;padding:26px 0}
+
+/* ---------- delta / trạng thái (§1.4–1.5) ---------- */
+.delta{font-family:var(--font-mono);font-size:13px;font-weight:500;display:inline-flex;
+  gap:5px;align-items:baseline;flex-wrap:wrap}
+.delta i{font-style:normal;font-family:var(--font-ui);font-size:12.5px}
+.is-good{color:var(--st-good)} .is-bad{color:var(--st-bad)} .is-neutral{color:var(--ink-3)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-ui);font-size:11px;
+  font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:3px;
+  padding:3px 8px;border:1px solid}
+.pill.good{color:var(--st-good);border-color:var(--st-good-line);background:var(--st-good-wash)}
+.pill.bad{color:var(--st-bad);border-color:var(--st-bad-line);background:var(--st-bad-wash)}
+.pill.neutral{color:var(--ink-3);border-color:var(--rule);background:var(--bg-2)}
+.pill.na{color:var(--ink-3);border-color:var(--rule);background:var(--bg-3);
+  font-style:italic;text-transform:none}
+
+/* ---------- tile (§4.9) ---------- */
+.tiles{display:grid;gap:12px}
+.tiles-5{grid-template-columns:repeat(5,1fr)}
+.tiles-3{grid-template-columns:repeat(3,1fr)}
+.tile{background:var(--bg-2);border-radius:4px;padding:14px 16px;display:flex;
+  flex-direction:column;gap:6px}
+.tile-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile-value{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:32px;
+  line-height:1.05;font-weight:500;color:var(--ink-1)}
+.tile-value .tile-unit{font-size:15px;color:var(--ink-3)}
+.tile-value.is-empty{color:var(--ink-3)}
+.tile-note{font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
+
+/* ---------- pair-guard ---------- */
+.method-chip{display:inline-block;background:var(--accent-wash);border:1px solid rgba(230,216,184,.35);
+  border-radius:3px;padding:2px 7px;font-family:var(--font-mono);font-size:11px;
+  font-weight:500;color:var(--accent);margin-left:6px}
+.scope-chip{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);border:1px solid var(--rule);
+  border-radius:3px;padding:1px 6px}
+.xref{background:var(--bg-3);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;
+  padding:12px 14px;font-size:13px;line-height:1.6;color:var(--ink-2);
+  display:flex;gap:10px;align-items:flex-start;margin-top:14px}
+.xref-glyph{font-family:var(--font-mono);color:var(--accent);flex:0 0 auto}
+.xref b{color:var(--ink-1)}
+.xref-link{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;cursor:pointer}
+
+/* ---------- news card (§4.8) ---------- */
+.news-list{display:flex;flex-direction:column;gap:16px}
+.news-card{background:var(--bg);border-radius:6px;box-shadow:var(--lift-panel);padding:20px 24px;
+  display:grid;grid-template-columns:1fr 240px;gap:20px;max-width:900px;color:var(--ink-2);
+  scroll-margin-top:120px}
+.news-kicker{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.org-mark{width:28px;height:28px;border-radius:3px;background:var(--bg-2);display:grid;
+  place-items:center;font-family:var(--font-mono);font-size:10px;font-weight:600;
+  letter-spacing:0;color:var(--accent);flex:0 0 auto}
+.news-card h3{font:600 18px/1.3 var(--font-ui);color:var(--ink-1);margin:8px 0 4px}
+.news-meta{font-family:var(--font-mono);font-size:12px;color:var(--ink-3)}
+.news-body{font-size:14px;line-height:1.65;max-width:68ch;margin-top:10px}
+.news-lead{font-size:16px;line-height:1.5;font-weight:500;color:var(--ink-1);
+  border-left:3px solid var(--accent);padding-left:12px;margin:10px 0 0}
+.hl{background:var(--accent-wash);color:var(--ink-1);padding:1px 4px;border-radius:2px}
+.nc-next{font-size:11.5px;color:var(--ink-3);margin:12px 0 0}
+.nc-fig{background:var(--bg-2);border-radius:4px;padding:12px;align-self:start}
+.fig-cap{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);display:block;margin-bottom:8px}
+.bignum{font-family:var(--font-mono);font-size:40px;font-weight:500;line-height:1;color:var(--ink-1)}
+.news-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:10px;
+  border-top:1px solid var(--hair);font-size:11.5px}
+
+/* ---------- confidence band (§4.12) ---------- */
+.confidence-band{background:var(--bg);border-left:4px solid var(--accent);border-radius:0 6px 6px 0;
+  box-shadow:var(--lift-panel);overflow:hidden;color:var(--ink-2);
+  margin-bottom:16px}
+.cb-grid{display:grid;grid-template-columns:minmax(200px,1fr) minmax(260px,1.2fr) minmax(230px,1fr)}
+.cb-zone{padding:16px 22px}
+.cb-zone + .cb-zone{border-left:1px solid var(--hair)}
+.cb-big{display:block;font-family:var(--font-display);font-size:30px;font-weight:600;
+  line-height:1.1;color:var(--ink-1)}
+.cb-zone p{font-size:12.5px;line-height:1.5;margin:6px 0 0}
+.cb-cap{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.cb-nums{display:flex;gap:20px;margin-top:8px;flex-wrap:wrap}
+.cb-nums b{display:block;font-family:var(--font-mono);font-size:17px;font-weight:500;
+  font-variant-numeric:tabular-nums;color:var(--ink-1)}
+.cb-nums i{display:block;font-style:normal;font-size:11px;color:var(--ink-3)}
+.cb-count{display:inline-block;margin-top:8px;border:1px solid var(--accent);color:var(--accent);
+  font-size:12px;font-weight:600;border-radius:3px;padding:3px 10px}
+.cb-count.is-expired{background:var(--st-bad);border-color:var(--st-bad);color:var(--on-accent)}
+.cb-ev{font-size:11.5px;color:var(--ink-3);margin-top:8px}
+.cb-foot{background:var(--bg-3);border-top:1px solid var(--hair);padding:12px 22px;
+  font-size:13px;line-height:1.6}
+.cb-foot b{color:var(--ink-1)}
+.cb-disclaimer{border-top:1px solid var(--hair);padding:10px 22px;font-size:11px;
+  line-height:1.55;color:var(--ink-3);font-style:italic}
+
+/* ---------- bảng ---------- */
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:480px}
+thead th{background:var(--bg-2);font-size:11px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-3);text-align:right;padding:9px 12px;white-space:nowrap}
+thead th:first-child{text-align:left}
+tbody td{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:13px;
+  text-align:right;padding:9px 12px;border-bottom:1px solid var(--hair);color:var(--ink-1);
+  white-space:nowrap}
+tbody td:first-child{font-family:var(--font-ui);font-size:13px;font-weight:500;text-align:left;
+  white-space:normal}
+tbody td.txt{font-family:var(--font-ui);text-align:left;white-space:normal;color:var(--ink-2)}
+tbody tr:hover td{background:var(--bg-2)}
+tbody tr.is-hi td{background:var(--accent-wash)}
+tbody tr.is-sel td{background:var(--accent-wash)}
+table.narrow{min-width:0}
+table.narrow thead th,table.narrow tbody td{padding:8px 7px;font-size:12px}
+.ext{font-size:11px;margin-left:5px}
+.verdict{background:var(--bg-3);border-left:3px solid var(--accent);padding:10px 14px;
+  margin-top:12px;font-size:14px;font-weight:600;color:var(--ink-1);border-radius:0 4px 4px 0}
+.rule-card{background:var(--bg-3);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;
+  padding:14px 16px;font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.rule-card h3{margin-bottom:8px}
+.rule-card .r{display:flex;gap:9px;margin-bottom:6px}
+.rule-card .r:last-child{margin-bottom:0}
+.rule-card .g{color:var(--accent);font-family:var(--font-mono);flex:0 0 auto}
+.rule-card b{color:var(--ink-1)}
+
+/* ---------- rec card (§4.13) ---------- */
+.rec-rail{display:flex;align-items:center;margin-bottom:10px}
+.rec-rail .line{height:1px;background:var(--rule-paper);flex:1 1 auto}
+.rec-rail .dot{width:8px;height:8px;border-radius:50%;background:var(--rule-paper);flex:0 0 auto}
+.rec-rail .dot.is-open{background:var(--good-paper)}
+.recs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.rec-card{background:var(--bg);box-shadow:var(--lift-panel);border-left:4px solid var(--ink-3);
+  border-radius:0 6px 6px 0;padding:16px 18px;display:flex;flex-direction:column;gap:8px;
+  color:var(--ink-2)}
+.rec-card.is-open{border-left-color:var(--st-good)}
+.rec-card.is-past{background:var(--bg);border-left-color:var(--ink-3)}
+.rec-card.is-past .rc-body{background:var(--bg-3)}
+.rc-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.rc-step{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink-3)}
+.rc-weight{font-family:var(--font-mono);font-size:26px;font-weight:500;color:var(--ink-1);line-height:1.1}
+.rec-card.is-past .rc-weight{color:var(--ink-2)}
+.rc-weight .unit{font-size:12px;margin-left:4px}
+.rc-when{font-family:var(--font-mono);font-size:12px;color:var(--ink-2)}
+.rc-why{font-size:13px;line-height:1.55}
+.rc-note{font-size:11.5px;color:var(--ink-3)}
+.rc-ft{margin-top:auto;padding-top:10px;border-top:1px solid var(--hair)}
+
+/* ---------- gauge (§4.14) ---------- */
+.gauge-scale{display:flex;justify-content:space-between;font-family:var(--font-mono);
+  font-size:11px;color:var(--ink-3);margin-bottom:4px}
+.gauge{position:relative;height:14px;border-radius:3px;background:var(--bg-2);overflow:hidden}
+.gauge .viol{position:absolute;top:0;bottom:0;background:var(--st-bad-wash)}
+.gauge .thr{position:absolute;top:0;bottom:0;width:2px;background:var(--st-bad)}
+.gauge-needle{position:relative;height:26px;margin-top:2px}
+.gauge-needle .n{position:absolute;transform:translateX(-50%);text-align:center}
+.gauge-needle .tri{color:var(--ink-1);font-size:11px;line-height:1}
+.gauge-needle .v{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--ink-1)}
+.gauge-note{margin-top:8px;font-size:13px;color:var(--st-bad);display:flex;gap:7px;line-height:1.55}
+
+/* ---------- timeline (§4.15) ---------- */
+.timeline{list-style:none;margin:0;padding:0 0 0 18px;border-left:1px solid var(--rule)}
+.timeline li{display:grid;grid-template-columns:74px 1fr auto auto;gap:12px;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--hair);position:relative;cursor:pointer}
+.timeline li:last-child{border-bottom:0}
+.tl-diamond{position:absolute;left:-24px;width:11px;height:11px;transform:rotate(45deg);
+  background:var(--ms-2)}
+.tl-diamond.d-high{width:13px;height:13px;background:var(--ms-1);outline:1.5px solid var(--bg);left:-25px}
+.tl-diamond.d-mark{width:9px;height:9px;background:none;border:1.5px solid var(--ms-3);left:-23px}
+.tl-date{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--ink-1)}
+.tl-name{font-size:14px;font-weight:500;color:var(--ink-1)}
+.tl-kind{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.tl-desc{font-size:12.5px;line-height:1.5;color:var(--ink-2);margin-top:2px;max-width:78ch}
+.tl-hl{font-size:12.5px;font-weight:600;color:var(--accent);margin-top:3px;max-width:78ch}
+.ms-pill{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  border-radius:3px;padding:2px 7px;border:1px solid;color:var(--ink-1);white-space:nowrap}
+.p-high{background:rgba(240,228,198,.18);border-color:var(--ms-1)}
+.p-mid{background:rgba(200,185,154,.18);border-color:var(--ms-2)}
+.p-mark{background:none;border-color:var(--ms-3);color:var(--ink-2)}
+.timeline li.is-refresh{border-left:2px solid var(--accent);margin-left:-19px;padding-left:17px}
+.tl-src{font-size:11.5px;color:var(--ink-3)}
+
+/* ---------- chain rail (2.4) ---------- */
+.chain{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:start}
+.chain+.chain{margin-top:16px}
+.chain-step{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:18px;
+  text-align:right;color:var(--ink3-paper)}
+.chain-step .n{font-family:var(--font-mono);font-size:11px}
+.chain-step .lbl{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.chain-step .chev{color:var(--rule-paper);font-size:14px}
+
+/* ---------- legend / small multiples ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--ink-2)}
+.legend .it{display:flex;align-items:center;gap:6px}
+.legend .sw{width:14px;height:2.5px;border-radius:2px;flex:0 0 auto}
+.legend .sw.sq{width:9px;height:9px;border-radius:1px}
+.legend .sw.bd{height:10px;border-radius:2px;opacity:.6}
+.legend .tk{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-1)}
+.sm{display:grid;gap:12px}
+.sm-5{grid-template-columns:repeat(5,1fr)}
+.sm-4{grid-template-columns:repeat(4,1fr)}
+.sm-cell{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sm-cell h4{font-size:12px;font-weight:600;color:var(--ink-1)}
+.sm-cell .cadence{margin:0 0 4px}
+.toggle{display:inline-flex;gap:2px;margin-left:auto}
+.toggle button{font-size:11.5px;font-weight:600;color:var(--ink-3);border:1px solid var(--rule);
+  border-radius:3px;padding:3px 9px}
+.toggle button.is-active{background:var(--accent-wash);color:var(--ink-1);border-color:var(--accent)}
+.hd-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+
+/* ---------- tooltip (§4.16) ---------- */
+#tt{position:fixed;z-index:90;pointer-events:none;background:var(--panel-inset);
+  border:1px solid var(--rule-panel);border-radius:6px;padding:12px 14px;width:min(440px,92vw);
+  display:none;box-shadow:var(--lift-menu);
+  color:var(--ink2-panel);font-size:12.5px;line-height:1.55}
+#tt .tt-hd{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--ink1-panel)}
+#tt .tt-rows{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+#tt .tt-r{display:flex;gap:8px;align-items:baseline}
+#tt .tt-sw{width:10px;height:2.5px;border-radius:2px;flex:0 0 auto;position:relative;top:-3px}
+#tt .tt-nm{flex:1 1 auto}
+#tt .tt-v{font-family:var(--font-mono);font-weight:600;color:var(--ink1-panel)}
+#tt .tt-body{margin-top:8px;padding-top:8px;border-top:1px solid var(--hair-panel);white-space:pre-line}
+#tt .tt-src{margin-top:6px;font-size:11.5px;color:var(--accent-panel);word-break:break-word}
+
+/* ---------- state ---------- */
+.state{max-width:640px;margin:64px auto;text-align:center;display:flex;flex-direction:column;
+  gap:12px;color:var(--ink2-paper)}
+.state h2{font-family:var(--font-display);font-size:22px;color:var(--ink1-paper)}
+.state p{font-size:14px;line-height:1.65}
+
+/* ---------- responsive (§3.3) ---------- */
+@media (max-width:1199px){
+  .sb-sub{display:none}
+  .s8,.s6,.s4{grid-column:span 12}
+  .news-card{grid-template-columns:1fr}
+  .nc-fig{order:-1}
+  .tiles-5{grid-template-columns:repeat(3,1fr)}
+  .sm-5{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:899px){
+  main{margin-left:0}
+  .sidebar{position:static;width:auto;height:auto;padding:0 16px;border-right:0;
+    border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px;overflow-x:auto}
+  .side-eyebrow,.side-foot{display:none}
+  .nav{flex-direction:row;gap:4px;padding:6px 0}
+  .nav button{min-height:34px;padding:7px 12px;width:auto;white-space:nowrap}
+  .snapshot-bar{padding:0 16px}
+  .subtabs{padding:0 16px}
+  .wrap{padding:16px 16px 56px}
+  .cb-grid{grid-template-columns:1fr}
+  .cb-zone + .cb-zone{border-left:0;border-top:1px solid var(--hair)}
+  .tiles-5{grid-template-columns:repeat(2,1fr)}
+  .tiles-3{grid-template-columns:1fr}
+  .sm-5,.sm-4{grid-template-columns:repeat(2,1fr)}
+  .recs{grid-template-columns:1fr}
+  .chain{grid-template-columns:1fr}
+  .chain-step{align-items:flex-start;text-align:left;padding-top:0;flex-direction:row;gap:8px}
+}
+@media (max-width:619px){
+  .sm-5,.sm-4{grid-template-columns:1fr}
+  .tiles-5{grid-template-columns:repeat(2,1fr)}
+  .timeline li{grid-template-columns:1fr;row-gap:4px}
+  .snapshot-menu{min-width:260px}
+}
+</style>
+
+<div class="topbar on-paper" id="topbar">
+  <header class="snapshot-bar">
+    <div class="sb-id">
+      <span class="wordmark">Trạm Quan sát Bông &amp; Xơ</span>
+      <span class="sb-sub">Giá nguyên liệu, vĩ mô và vị thế thị trường — cập nhật theo nguồn công bố quốc tế.</span>
+    </div>
+    <div class="sb-snap" id="sbSnap"></div>
+  </header>
+  <div id="ribbonSlot"></div>
+  <aside class="sidebar on-paper">
+    <div class="side-graphic" aria-hidden="true">
+      <svg viewBox="0 0 216 96" xmlns="http://www.w3.org/2000/svg">
+        <rect width="216" height="96" fill="#16283C"/>
+        <path d="M40 82 C40 55 50 40 55 30 M108 82 C108 52 100 38 96 26 M176 82 C176 56 168 42 163 30"
+          stroke="#3A4E64" stroke-width="2" fill="none"/>
+        <g fill="#E6D8B8">
+          <circle cx="46" cy="26" r="12"/><circle cx="60" cy="24" r="12"/>
+          <circle cx="53" cy="16" r="12"/><circle cx="53" cy="34" r="10"/>
+        </g>
+        <g fill="#C8B99A">
+          <circle cx="88" cy="22" r="11"/><circle cx="101" cy="20" r="11"/>
+          <circle cx="94" cy="12" r="11"/><circle cx="94" cy="30" r="9"/>
+        </g>
+        <g fill="#F0E4C6">
+          <circle cx="156" cy="26" r="13"/><circle cx="171" cy="24" r="13"/>
+          <circle cx="163" cy="15" r="13"/><circle cx="163" cy="34" r="11"/>
+        </g>
+        <path d="M4 88 Q60 78 108 88 T212 88" stroke="#8698AE" stroke-width="1.4" fill="none" opacity=".55"/>
+      </svg>
+    </div>
+    <p class="side-eyebrow">Mục lớn</p>
+    <nav class="nav" id="navList" role="tablist" aria-label="Mục lớn"></nav>
+    <div class="side-foot" id="navFoot"></div>
+  </aside>
+</div>
+<nav class="subtabs on-paper" id="subtabs" role="tablist" aria-label="Sub-tab"></nav>
+<main><div class="wrap" id="wrap">
+  <div class="state"><h2>Đang tải dữ liệu…</h2>
+    <p>Trang đọc dữ liệu sống từ cơ sở dữ liệu của chính nó.</p></div>
+</div></main>
+<div id="tt" role="tooltip"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   1. ĐỊNH DẠNG (quy ước Việt Nam: phẩy thập phân, chấm nghìn)
+   ===================================================================== */
+const VI = new Intl.NumberFormat("vi-VN");
+function n2(v, dec = 2) {
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
+  return new Intl.NumberFormat("vi-VN", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(v);
+}
+function nInt(v) { return (v === null || v === undefined) ? "—" : VI.format(Math.round(v)); }
+function dmy(iso) { if (!iso) return "—"; const p = String(iso).split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
+function dm(iso) { if (!iso) return "—"; const p = String(iso).split("-"); return p[2] + "/" + p[1]; }
+function myShort(iso) { const p = String(iso).split("-"); return p[1] + "/" + p[0].slice(2); }
+function esc(s) {
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function ts(iso) { return Date.parse(iso + "T00:00:00Z"); }
+function daysBetween(a, b) { return Math.round((ts(b) - ts(a)) / 86400000); }
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* =====================================================================
+   2. TỪ ĐIỂN NGUỒN (§4.5) — nguồn hiển thị CHỈ đến từ đây.
+   Không nhận chuỗi tự do; thiếu ánh xạ -> "chưa ánh xạ" + console.warn.
+   Cấm mọi tên tệp/sheet nội bộ lọt vào DOM.
+   ===================================================================== */
+const SOURCES = {
+  te:       { name: "Trading Economics", url: "https://tradingeconomics.com/indicators" },
+  drewry:   { name: "Drewry Supply Chain Advisors", url: "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry" },
+  eia:      { name: "U.S. Energy Information Administration (EIA)", url: "https://www.eia.gov/dnav/pet/hist/RBRTEd.htm" },
+  ice:      { name: "ICE Futures U.S.", url: "https://www.ice.com/products/254/Cotton-No-2-Futures" },
+  iceCot:   { name: "ICE Futures U.S. · Cotlook Ltd (số liệu qua EmergingTextiles)", url: "https://www.emergingtextiles.com/" },
+  cotlook:  { name: "Cotlook Ltd", url: "https://www.cotlook.com/" },
+  fsa:      { name: "USDA — Farm Service Agency", url: "https://www.fsa.usda.gov/resources/programs/cotton" },
+  emerging: { name: "EmergingTextiles", url: "https://www.emergingtextiles.com/" },
+  vcb:      { name: "Vietcombank", url: "https://www.vietcombank.com.vn/vi-VN/KHCN/Cong-cu-Tien-ich/Ty-gia" },
+  banks:    { name: "Vietcombank · BIDV · VietinBank · Techcombank (biểu lãi suất niêm yết)", url: null },
+  cftc:     { name: "U.S. Commodity Futures Trading Commission (CFTC)", url: "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" },
+  wasde:    { name: "USDA — World Agricultural Outlook Board (WASDE)", url: "https://www.usda.gov/oce/commodity/wasde" },
+  fas:      { name: "USDA — Foreign Agricultural Service (FAS)", url: "https://www.fas.usda.gov/data/cotton-world-markets-and-trade" },
+  fed:      { name: "Federal Reserve", url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" },
+  events:   { name: "USDA WAOB · CFTC · Federal Reserve · ICE Futures U.S.", url: null },
+  deskEst:  { name: "Ước tính của bàn — dữ liệu gốc: Cotlook Ltd, ICE Futures U.S.", url: null },
+  deskMeas: { name: "Đo lường nội bộ trên chuỗi Cotlook Ltd", url: null },
+  deskRec:  { name: "Khuyến nghị của bàn — không phải khuyến nghị đầu tư của bên thứ ba", url: null },
+  cotZ:     { name: "CFTC (chuỗi gốc) · điểm z: Ước tính của bàn", url: "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" }
+};
+/* ánh xạ tên miền trong lịch sự kiện -> khoá SOURCES (không hiện tên miền thô) */
+const SRC_BY_DOMAIN = {
+  "usda.gov": "wasde", "fas.usda.gov": "fas", "cftc.gov": "cftc",
+  "federalreserve.gov": "fed", "ice.com": "ice", "nội bộ": "deskEst"
+};
+function srcLink(key) {
+  const s = SOURCES[key];
+  if (!s) { console.warn("SOURCES thiếu ánh xạ cho khoá:", key); return '<span class="src-link">chưa ánh xạ</span>'; }
+  if (!s.url) return '<span class="src-link" style="text-decoration:none">' + esc(s.name) + "</span>";
+  return '<a class="src-link" href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) +
+    '<span class="src-arrow">↗</span></a>';
+}
+/* Bảng tần suất chuẩn (outline §N5) — dùng NGUYÊN VĂN, không tự chế biến thể */
+const FREQ = {
+  quarter: "theo quý", month: "theo tháng", week: "theo tuần",
+  session: "theo phiên giao dịch", cbmeet: "theo kỳ họp ngân hàng trung ương",
+  bankrate: "khi ngân hàng điều chỉnh biểu lãi suất",
+  cot: "theo tuần (công bố thứ Sáu)", model: "mỗi lần chạy lại mô hình"
+};
+/* Dòng nhịp cập nhật thống nhất (§4.5) — trung tính, không nền, không icon */
+function cadence(freq, asOfText, srcKey, tail) {
+  return '<p class="cadence">Cập nhật ' + esc(freq) +
+    (asOfText ? '<span class="sep">·</span>Gần nhất: <span class="mono">' + esc(asOfText) + "</span>" : "") +
+    (srcKey ? '<span class="sep">·</span>Nguồn: ' + srcLink(srcKey) : "") +
+    (tail ? '<span class="sep">·</span>' + tail : "") + "</p>";
+}
+
+/* =====================================================================
+   3. CHIỀU CÓ LỢI (§1.5) — màu gắn với HỆ QUẢ, không gắn với dấu số học
+   ===================================================================== */
+const DIR = {
+  price:    { up: ["bad", "tăng chi phí"], down: ["good", "hạ chi phí"] },
+  stocks:   { up: ["good", "cung nới"], down: ["bad", "cung thắt lại"] },
+  cot:      { up: ["bad", "vị thế mua dày thêm"], down: ["good", "vị thế mua mỏng đi"] },
+  demand:   { up: ["good", "cầu tăng"], down: ["bad", "cầu giảm"] },
+  activity: { up: ["good", "tiêu thụ tăng"], down: ["bad", "tiêu thụ giảm"] },
+  neutral:  { up: ["neutral", ""], down: ["neutral", ""] }
+};
+/** delta có 3 kênh độc lập: glyph = chiều số học · màu = hệ quả · chữ = giải thích */
+function deltaHtml(v, dec, unit, group, eps) {
+  const e = eps === undefined ? 0 : eps;
+  if (v === null || v === undefined || Number.isNaN(v))
+    return '<span class="delta is-neutral"><span>■</span> không so sánh được</span>';
+  const g = DIR[group] || DIR.neutral;
+  const up = v > e, down = v < -e;
+  const glyph = up ? "▲" : down ? "▼" : "■";
+  const rule = up ? g.up : down ? g.down : ["neutral", ""];
+  const cls = group === "neutral" ? "neutral" : rule[0];
+  return '<span class="delta is-' + cls + '"><span>' + glyph + "</span> " +
+    n2(Math.abs(v), dec) + (unit ? " " + esc(unit) : "") +
+    (rule[1] ? ' <i>· ' + esc(rule[1]) + "</i>" : "") + "</span>";
+}
+
+/* =====================================================================
+   4. KHỐI DÙNG CHUNG
+   ===================================================================== */
+function unitTag(u) { return '<span class="unit">' + esc(u) + "</span>"; }
+function chip(t) { return '<span class="method-chip">' + esc(t) + "</span>"; }
+function xref(html) { return '<div class="xref"><span class="xref-glyph">⇄</span><p>' + html + "</p></div>"; }
+function jump(sec, tab, label) {
+  return '<span class="xref-link" role="link" tabindex="0" data-go="' + sec + "|" + tab + '">' + label + "</span>";
+}
+/** panel: KHÔNG badge, KHÔNG panel-ft — nguồn nằm trong cadence (§4.4) */
+function panel(o) {
+  return '<section class="panel on-panel ' + (o.span === undefined ? "s12" : o.span) + '"' +
+    (o.id ? ' id="' + o.id + '"' : "") + ">" +
+    '<div class="hd-row"><h3>' + o.title + (o.unit ? " " + unitTag(o.unit) : "") + "</h3>" +
+    (o.hdExtra || "") + "</div>" +
+    (o.cadence || "") +
+    '<div class="panel-body">' + o.body + "</div>" +
+    (o.note ? '<p class="chart-note">' + o.note + "</p>" : "") +
+    "</section>";
+}
+function pageHd(eyebrow, title, q, frame) {
+  return '<p class="page-eyebrow">' + esc(eyebrow) + "</p><h1>" + esc(title) + "</h1>" +
+    '<p class="page-q">' + esc(q) + "</p>" +
+    (frame ? '<p class="frame-label">' + frame + "</p>" : '<div style="height:10px"></div>');
+}
+function noData(what) {
+  return '<div class="state"><h2>Chưa có dữ liệu — ' + esc(what) + "</h2>" +
+    "<p>Bản lưu đang xem chưa có nội dung cho mục này. Chọn một thời điểm khác ở thanh trên cùng, " +
+    "hoặc quay lại bản mới nhất.</p></div>";
+}
+function panelMissing(txt) { return '<p class="panel-missing">' + esc(txt) + "</p>"; }
+function legend(items) {
+  return '<div class="legend">' + items.map(it =>
+    '<span class="it"><span class="sw' + (it.sq ? " sq" : "") + (it.bd ? " bd" : "") +
+    '" style="background:' + it.c + '"></span>' +
+    (it.tk ? '<span class="tk">' + esc(it.tk) + "</span> " : "") + esc(it.n) + "</span>").join("") + "</div>";
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   5. BỘ VẼ CHART SVG (tự vẽ, không thư viện ngoài)
+   Mọi chart nằm trên MẶT PHẲNG PANEL -> đọc token *-panel từ :root.
+   ===================================================================== */
+const CHARTS = [];
+let CID = 0;
+function chartBox(cfg, h, draw) {
+  const id = "c" + (++CID);
+  CHARTS.push({ id: id, cfg: cfg, h: h, draw: draw || null });
+  return '<div class="chart-wrap" id="' + id + '" style="height:' + h + 'px"></div>';
+}
+function niceTicks(min, max, count) {
+  if (min === max) { min -= 1; max += 1; }
+  const span = max - min, step0 = span / count, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const norm = step0 / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+  const out = [];
+  for (let t = Math.ceil(min / step) * step; t <= max + 1e-9; t += step) out.push(Math.round(t / step) * step);
+  return out;
+}
+function pathFrom(pts, X, Y) {
+  let d = "", pen = false;
+  for (const p of pts) {
+    if (p.v === null || p.v === undefined) { pen = false; continue; }
+    d += (pen ? "L" : "M") + X(p.x).toFixed(1) + " " + Y(p.v).toFixed(1) + " ";
+    pen = true;
+  }
+  return d.trim();
+}
+function stepPath(pts, X, Y) {
+  let d = "", prev = null;
+  for (const p of pts) {
+    if (p.v === null) continue;
+    if (prev === null) d += "M" + X(p.x).toFixed(1) + " " + Y(p.v).toFixed(1) + " ";
+    else d += "L" + X(p.x).toFixed(1) + " " + Y(prev).toFixed(1) + " L" + X(p.x).toFixed(1) + " " + Y(p.v).toFixed(1) + " ";
+    prev = p.v;
+  }
+  return d.trim();
+}
+function chartColors() {
+  return {
+    grid: css("--grid-panel"), bs: css("--rule-panel"), mut: css("--ink3-panel"),
+    sec: css("--ink2-panel"), pri: css("--ink1-panel"), pan: css("--panel"),
+    pan2: css("--panel-2"), hair: css("--hair-panel"), acc: css("--accent-panel")
+  };
+}
+function drawChart(el, cfg, h) {
+  const W = Math.max(el.clientWidth || 320, 200);
+  const padL = cfg.padL || 46, padR = cfg.padR || (cfg.endLabels ? 62 : 14),
+    padT = cfg.padT || 12, padB = cfg.padB || 26;
+  const iw = Math.max(W - padL - padR, 40), ih = Math.max(h - padT - padB, 40);
+  const all = [];
+  cfg.series.forEach(s => s.pts.forEach(p => { if (p.v !== null && p.v !== undefined) all.push(p.v); }));
+  (cfg.areas || []).forEach(a => { (a.lo || []).forEach(p => all.push(p.v)); (a.hi || []).forEach(p => all.push(p.v)); });
+  if (!all.length) { el.innerHTML = '<div class="empty">Chưa có dữ liệu cho biểu đồ này.</div>'; return; }
+  let yMin = cfg.yMin !== undefined ? cfg.yMin : Math.min.apply(null, all);
+  let yMax = cfg.yMax !== undefined ? cfg.yMax : Math.max.apply(null, all);
+  if (cfg.zeroLine && yMin > 0) yMin = 0;
+  const padY = (yMax - yMin) * 0.08 || 1;
+  if (cfg.yMin === undefined) yMin -= padY;
+  if (cfg.yMax === undefined) yMax += padY;
+  const ticks = niceTicks(yMin, yMax, cfg.yTicks || 4);
+  yMin = Math.min(yMin, ticks[0]); yMax = Math.max(yMax, ticks[ticks.length - 1]);
+
+  let xs = [];
+  cfg.series.forEach(s => s.pts.forEach(p => xs.push(p.x)));
+  (cfg.areas || []).forEach(a => (a.hi || []).forEach(p => xs.push(p.x)));
+  (cfg.vlines || []).forEach(v => xs.push(v.x));
+  let x0 = cfg.x0 !== undefined ? cfg.x0 : Math.min.apply(null, xs);
+  let x1 = cfg.x1 !== undefined ? cfg.x1 : Math.max.apply(null, xs);
+  if (x0 === x1) x1 = x0 + 1;
+  const bandW = cfg.xkind === "band" ? iw / (x1 - x0 + 1) : 0;
+  const X = cfg.xkind === "band" ? (v) => padL + bandW * (v - x0 + 0.5)
+    : (v) => padL + iw * (v - x0) / (x1 - x0);
+  const Y = (v) => padT + ih * (1 - (v - yMin) / (yMax - yMin));
+  const C = chartColors();
+  let s = '<svg width="' + W + '" height="' + h + '" viewBox="0 0 ' + W + " " + h + '" role="img" style="display:block">';
+  s += '<defs><pattern id="hatch' + el.id + '" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
+    '<line x1="0" y1="0" x2="0" y2="7" stroke="' + css("--fc-hatch") + '" stroke-width="3"/></pattern></defs>';
+  ticks.forEach(t => {
+    s += '<line x1="' + padL + '" y1="' + Y(t).toFixed(1) + '" x2="' + (padL + iw) + '" y2="' + Y(t).toFixed(1) +
+      '" stroke="' + C.grid + '" stroke-width="1"/>';
+    s += '<text x="' + (padL - 7) + '" y="' + (Y(t) + 3.5).toFixed(1) + '" text-anchor="end" fill="' + C.mut +
+      '" font-family="' + css("--font-mono") + '" font-size="11">' + n2(t, cfg.yDec === undefined ? 0 : cfg.yDec) + "</text>";
+  });
+  s += '<line x1="' + padL + '" y1="' + (padT + ih) + '" x2="' + (padL + iw) + '" y2="' + (padT + ih) +
+    '" stroke="' + C.bs + '" stroke-width="1"/>';
+  (cfg.xTicks || []).forEach(t => {
+    s += '<text x="' + X(t.x).toFixed(1) + '" y="' + (padT + ih + 15) + '" text-anchor="middle" fill="' + C.mut +
+      '" font-family="' + css("--font-mono") + '" font-size="11">' + esc(t.label) + "</text>";
+  });
+  (cfg.areas || []).forEach(a => {
+    const up = a.hi.map(p => X(p.x).toFixed(1) + "," + Y(p.v).toFixed(1)).join(" ");
+    const dn = a.lo.slice().reverse().map(p => X(p.x).toFixed(1) + "," + Y(p.v).toFixed(1)).join(" ");
+    s += '<polygon points="' + up + " " + dn + '" fill="' + a.fill + '" stroke="none"/>';
+    if (a.hatch) s += '<polygon points="' + up + " " + dn + '" fill="url(#hatch' + el.id + ')" stroke="none"/>';
+  });
+  (cfg.vlines || []).forEach(v => {
+    s += '<line x1="' + X(v.x).toFixed(1) + '" y1="' + padT + '" x2="' + X(v.x).toFixed(1) + '" y2="' + (padT + ih) +
+      '" stroke="' + v.color + '" stroke-width="1"' + (v.dash ? ' stroke-dasharray="4 3"' : "") + "/>";
+    if (v.label) s += '<text x="' + (X(v.x) + (v.anchor === "end" ? -5 : 5)).toFixed(1) + '" y="' + (padT + 10) +
+      '" text-anchor="' + (v.anchor || "start") + '" fill="' + (v.labelColor || C.mut) +
+      '" font-family="' + css("--font-ui") + '" font-size="10.5" font-weight="600" letter-spacing=".05em">' + esc(v.label) + "</text>";
+  });
+  cfg.series.forEach(sr => {
+    const w = sr.w || 1.75;
+    if (cfg.kind === "bar") {
+      const bw = Math.min(bandW * 0.52, 74);
+      sr.pts.forEach(p => {
+        if (p.v === null) return;
+        s += '<rect x="' + (X(p.x) - bw / 2).toFixed(1) + '" y="' + Y(p.v).toFixed(1) + '" width="' + bw.toFixed(1) +
+          '" height="' + Math.max(padT + ih - Y(p.v), 0).toFixed(1) + '" rx="2" fill="' + p.color + '" stroke="none"/>';
+        s += '<text x="' + X(p.x).toFixed(1) + '" y="' + (Y(p.v) - 7).toFixed(1) + '" text-anchor="middle" fill="' + C.pri +
+          '" font-family="' + css("--font-mono") + '" font-size="12" font-weight="500">' + n2(p.v, 2) + "</text>";
+      });
+    } else if (sr.step) {
+      s += '<path d="' + stepPath(sr.pts, X, Y) + '" fill="none" stroke="' + sr.color + '" stroke-width="' + w +
+        '" shape-rendering="crispEdges" stroke-linejoin="miter"/>';
+      sr.pts.forEach(p => { if (p.v !== null) s += '<circle cx="' + X(p.x).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="4" fill="' + sr.color + '"/>'; });
+    } else {
+      if (sr.seg) {
+        sr.seg.forEach(g => {
+          s += '<path d="' + pathFrom(g.pts, X, Y) + '" fill="none" stroke="' + sr.color + '" stroke-width="' + w +
+            '" stroke-linejoin="round" stroke-linecap="round"' + (g.dash ? ' stroke-dasharray="4 3" opacity=".7"' : "") + "/>";
+        });
+      } else {
+        s += '<path d="' + pathFrom(sr.pts, X, Y) + '" fill="none" stroke="' + sr.color + '" stroke-width="' + w +
+          '" stroke-linejoin="round" stroke-linecap="round"' + (sr.dash ? ' stroke-dasharray="6 4"' : "") + "/>";
+      }
+      if (sr.marker) sr.pts.forEach(p => {
+        if (p.v === null) return;
+        s += sr.marker === "square"
+          ? '<rect x="' + (X(p.x) - 4).toFixed(1) + '" y="' + (Y(p.v) - 4).toFixed(1) + '" width="8" height="8" fill="' + sr.color + '"/>'
+          : '<circle cx="' + X(p.x).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="4" fill="' + sr.color + '"/>';
+      });
+      const lastP = sr.pts.filter(p => p.v !== null).pop();
+      if (sr.endDot && lastP) s += '<circle cx="' + X(lastP.x).toFixed(1) + '" cy="' + Y(lastP.v).toFixed(1) +
+        '" r="4.5" fill="' + sr.color + '" stroke="' + C.pan + '" stroke-width="1.5"/>';
+      if (cfg.endLabels && lastP) {
+        const tx = X(lastP.x) + 8, ty = Y(lastP.v) + 4;
+        const lbl = sr.ticker || sr.name;
+        s += '<rect x="' + (tx - 2).toFixed(1) + '" y="' + (ty - 11).toFixed(1) + '" width="' + (lbl.length * 6.9 + 5).toFixed(1) +
+          '" height="15" fill="' + C.pan + '" opacity=".85" rx="2"/>';
+        s += '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" fill="' + sr.color + '" font-family="' + css("--font-mono") +
+          '" font-size="12" font-weight="' + (sr.w && sr.w > 2 ? 600 : 500) + '">' + esc(lbl) + "</text>";
+      }
+    }
+  });
+  (cfg.annos || []).forEach(a => {
+    const ax = X(a.x), ay = Y(a.v), dx = a.dx === undefined ? -12 : a.dx, dy = a.dy === undefined ? -34 : a.dy;
+    const lines = a.text.split("|");
+    const bw = Math.max.apply(null, lines.map(l => l.length * 6.1)) + 16;
+    const bx = Math.max(padL + 2, Math.min(ax + dx - bw / 2, W - padR - bw));
+    const by = Math.max(2, ay + dy - lines.length * 15);
+    s += '<line x1="' + ax.toFixed(1) + '" y1="' + ay.toFixed(1) + '" x2="' + (bx + bw / 2).toFixed(1) + '" y2="' +
+      (by + lines.length * 15 + 2).toFixed(1) + '" stroke="' + C.mut + '" stroke-width="1"/>';
+    s += '<circle cx="' + ax.toFixed(1) + '" cy="' + ay.toFixed(1) + '" r="4" fill="none" stroke="' + C.pri + '" stroke-width="2"/>';
+    s += '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (lines.length * 15 + 4) +
+      '" rx="3" fill="' + C.pan + '" opacity=".94" stroke="' + C.bs + '"/>';
+    lines.forEach((l, i) => {
+      s += '<text x="' + (bx + 8).toFixed(1) + '" y="' + (by + 15 + i * 14).toFixed(1) + '" fill="' + (a.color || C.sec) +
+        '" font-family="' + css("--font-ui") + '" font-size="11.5"' + (a.color ? ' font-weight="600"' : "") + '>' + esc(l) + "</text>";
+    });
+  });
+  s += '<rect x="' + padL + '" y="' + padT + '" width="' + iw + '" height="' + ih + '" fill="transparent"/>';
+  s += '<line class="cross" x1="0" y1="' + padT + '" x2="0" y2="' + (padT + ih) + '" stroke="' + C.bs +
+    '" stroke-width="1" style="display:none"/>';
+  s += "</svg>";
+  el.innerHTML = s;
+  el._meta = { cfg: cfg, X: X, Y: Y, padL: padL, iw: iw, x0: x0, x1: x1, xkind: cfg.xkind };
+}
+
+/* ---------- tooltip dùng chung ---------- */
+const TT = document.getElementById("tt");
+function hideTT() { TT.style.display = "none"; document.querySelectorAll(".cross").forEach(c => c.style.display = "none"); }
+function placeTT(html, cx, cy) {
+  TT.innerHTML = html; TT.style.display = "block";
+  const tw = TT.offsetWidth, th = TT.offsetHeight;
+  let lx = cx + 16, ly = cy + 14;
+  if (lx + tw > innerWidth - 8) lx = Math.max(8, cx - tw - 16);
+  if (ly + th > innerHeight - 8) ly = Math.max(8, innerHeight - th - 8);
+  TT.style.left = lx + "px"; TT.style.top = ly + "px";
+}
+function onMove(ev) {
+  const el = ev.currentTarget, m = el._meta;
+  if (!m) return;
+  const r = el.getBoundingClientRect(), mx = ev.clientX - r.left;
+  const frac = (mx - m.padL) / m.iw;
+  const xv = m.xkind === "band" ? Math.round(m.x0 + frac * (m.x1 - m.x0 + 1) - 0.5) : m.x0 + frac * (m.x1 - m.x0);
+  let best = null;
+  m.cfg.series.forEach(sr => sr.pts.forEach(p => {
+    if (p.v === null) return;
+    const d = Math.abs(p.x - xv);
+    if (!best || d < best.d) best = { d: d, x: p.x, label: p.label };
+  }));
+  if (!best) return;
+  const rows = [];
+  m.cfg.series.forEach(sr => {
+    const p = sr.pts.find(q => q.x === best.x);
+    if (p && p.v !== null && p.v !== undefined)
+      rows.push({ c: sr.color, n: sr.name, v: n2(p.v, m.cfg.ttDec === undefined ? 2 : m.cfg.ttDec), u: m.cfg.yUnit || "", note: p.note, src: p.src });
+  });
+  if (!rows.length) return;
+  const cross = el.querySelector(".cross");
+  if (cross) { cross.setAttribute("x1", m.X(best.x)); cross.setAttribute("x2", m.X(best.x)); cross.style.display = ""; }
+  let h = '<div class="tt-hd">' + esc(best.label) + '</div><div class="tt-rows">';
+  rows.forEach(rw => {
+    h += '<div class="tt-r"><span class="tt-sw" style="background:' + rw.c + '"></span>' +
+      '<span class="tt-nm">' + esc(rw.n) + '</span><span class="tt-v">' + rw.v + " " + esc(rw.u) + "</span></div>";
+  });
+  h += "</div>";
+  const wn = rows.find(rw => rw.note);
+  if (wn) h += '<div class="tt-body">' + esc(wn.note) + "</div>";
+  const ws = rows.find(rw => rw.src);
+  if (ws) h += '<div class="tt-src">' + srcLink(m.cfg.srcKey || "wasde") +
+    ' — <a class="src-link" href="' + esc(ws.src) + '" target="_blank" rel="noopener">bản báo cáo của kỳ này ↗</a></div>';
+  placeTT(h, ev.clientX, ev.clientY);
+}
+function paintCharts() {
+  CHARTS.forEach(c => {
+    const el = document.getElementById(c.id);
+    if (!el) return;
+    (c.draw || drawChart)(el, c.cfg, c.h);
+    if (!c.draw) {
+      el.onmousemove = onMove; el.onmouseleave = hideTT;
+      el.ontouchstart = (e) => { if (e.touches[0]) onMove({ currentTarget: el, clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }); };
+    }
+  });
+}
+let RT;
+addEventListener("resize", () => { clearTimeout(RT); RT = setTimeout(paintCharts, 160); });
+
+function pts(o) {
+  const out = [];
+  for (let i = 0; i < o.d.length; i++) out.push({ x: ts(o.d[i]), v: o.v[i], label: dmy(o.d[i]) });
+  return out;
+}
+function timeTicks(x0, x1, count) {
+  const out = [], span = x1 - x0, stepM = Math.max(1, Math.round(span / 86400000 / 30 / (count || 6)));
+  let d = new Date(x0); d.setUTCDate(1);
+  while (d.getTime() <= x1) {
+    if (d.getTime() >= x0) out.push({ x: d.getTime(), label: String(d.getUTCMonth() + 1).padStart(2, "0") + "/" + String(d.getUTCFullYear()).slice(2) });
+    d.setUTCMonth(d.getUTCMonth() + stepM);
+  }
+  return out;
+}
+function weekTicks(x0, x1, everyDays) {
+  const out = [], step = (everyDays || 7) * 86400000;
+  for (let t = x1; t >= x0; t -= step) out.unshift({ x: t, label: dm(new Date(t).toISOString().slice(0, 10)) });
+  return out;
+}
+
+/* =====================================================================
+   6. MILESTONE CHART (§4.6) — ramp 1 sắc §1.7, KHÔNG dòng tên tệp
+   ===================================================================== */
+const MS = {
+  "Cao":        { c: "--ms-1", size: 13, hollow: false, label: "Cao" },
+  "Trung bình": { c: "--ms-2", size: 11, hollow: false, label: "Trung bình" }
+};
+function msOf(muc) { return MS[muc] || { c: "--ms-3", size: 9, hollow: true, label: "Mốc" }; }
+function msClass(muc) { return muc === "Cao" ? "d-high" : muc === "Trung bình" ? "d-mid" : "d-mark"; }
+function msPill(muc) { return muc === "Cao" ? "p-high" : muc === "Trung bình" ? "p-mid" : "p-mark"; }
+function shortEvent(name) {
+  let s = String(name || "");
+  s = s.replace(/^USDA\s+/, "")
+       .replace(/^CFTC CoT — dữ liệu đến /, "CoT →")
+       .replace(/^Cuộc họp FOMC \(Fed\) — ngày (\d)\/\d$/, "FOMC ngày $1")
+       .replace(/^Quyết định lãi suất Fed$/, "Fed lãi suất")
+       .replace(/^First Notice Day — hợp đồng ICE ([A-Za-z0-9]+).*$/, "FND $1")
+       .replace(/^Hết horizon.*$/, "Hết chân trời");
+  if (s.length > 17) s = s.slice(0, 16) + "…";
+  return s;
+}
+/** Nội dung chính của 1 mốc ĐÃ DIỄN RA — lấy động từ f.wasde/f.cot (không hardcode theo tên
+ *  sự kiện, để tuần sau mốc mới vẫn tự đúng). Chỉ trả chữ cho mốc có hậu tố "(ĐÃ" trong tên
+ *  (quy ước của agent dự báo khi viết Fact_SuKien) — mốc chưa diễn ra không có nội dung thật
+ *  để hiện, tránh bịa số cho việc chưa xảy ra. */
+function eventHighlight(e, f) {
+  if (!/\(ĐÃ/.test(e.ten || "")) return null;
+  if (e.loai === "Cung-cầu" && f.wasde && f.wasde.rows && f.wasde.rows.length >= 2) {
+    const w = f.wasde.rows, a = w[w.length - 2], b = w[w.length - 1];
+    return "S/U Mỹ " + n2(a.su, 2) + "%→" + n2(b.su, 2) + "%";
+  }
+  if (e.loai === "Vị thế đầu cơ" && f.cot && f.cot.z_last !== null && f.cot.z_last !== undefined) {
+    return "z-score " + n2(f.cot.z_last, 2) + " (>ngưỡng " + n2(f.cot.z_threshold, 1) + ")";
+  }
+  return null;
+}
+function drawMilestone(el, cfg, h) {
+  const W = Math.max(el.clientWidth || 600, 260);
+  const narrow = W < 620;
+  const padL = 46, padR = 18, padT = narrow ? 64 : 74, padB = 76;
+  const iw = Math.max(W - padL - padR, 60), ih = Math.max(h - padT - padB, 80);
+  const a = cfg.actual, hz = cfg.horizons, anc = cfg.anchor, evs = cfg.events || [];
+  const lastX = ts(a.d[a.d.length - 1]);
+  // Trục X phải phủ CẢ mốc sự kiện cuối cùng, nếu không bảng sự kiện (8 dòng)
+  // và làn hình thoi sẽ lệch số — spec yêu cầu hai nơi luôn cùng số dòng.
+  const evMax = evs.length ? Math.max.apply(null, evs.map(e => ts(e.d))) : 0;
+  const x0 = cfg.x0;
+  const x1 = Math.max(ts(hz[hz.length - 1].date), evMax) + 2 * 86400000;
+  const hist = [];
+  for (let i = 0; i < a.d.length; i++) { const x = ts(a.d[i]); if (x >= x0) hist.push({ x: x, v: a.v[i], label: dmy(a.d[i]) }); }
+  const lo = [{ x: lastX, v: anc.value }].concat(hz.map(x => ({ x: ts(x.date), v: x.low90 })));
+  const hi = [{ x: lastX, v: anc.value }].concat(hz.map(x => ({ x: ts(x.date), v: x.high90 })));
+  const ct = [{ x: lastX, v: anc.value }].concat(hz.map(x => ({ x: ts(x.date), v: x.center })));
+  const all = hist.map(p => p.v).filter(v => v !== null).concat(lo.map(p => p.v), hi.map(p => p.v));
+  if (!all.length) { el.innerHTML = '<div class="empty">Chưa có dữ liệu cho biểu đồ này.</div>'; return; }
+  let yMin = Math.min.apply(null, all), yMax = Math.max.apply(null, all);
+  const pY = (yMax - yMin) * 0.1 || 1; yMin -= pY; yMax += pY;
+  const ticks = niceTicks(yMin, yMax, 4);
+  yMin = Math.min(yMin, ticks[0]); yMax = Math.max(yMax, ticks[ticks.length - 1]);
+  const X = (v) => padL + iw * (v - x0) / (x1 - x0);
+  const Y = (v) => padT + ih * (1 - (v - yMin) / (yMax - yMin));
+  const plotB = padT + ih, laneT = plotB, laneH = 26, laneMid = laneT + laneH / 2;
+  const axisY = laneT + laneH + 4;
+  const C = chartColors();
+  let s = '<svg width="' + W + '" height="' + h + '" viewBox="0 0 ' + W + " " + h + '" role="img" style="display:block">';
+  s += '<defs><pattern id="mh' + el.id + '" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
+    '<line x1="0" y1="0" x2="0" y2="7" stroke="' + css("--fc-hatch") + '" stroke-width="3"/></pattern></defs>';
+  ticks.forEach(t => {
+    s += '<line x1="' + padL + '" y1="' + Y(t).toFixed(1) + '" x2="' + (padL + iw) + '" y2="' + Y(t).toFixed(1) +
+      '" stroke="' + C.grid + '" stroke-width="1"/>' +
+      '<text x="' + (padL - 7) + '" y="' + (Y(t) + 3.5).toFixed(1) + '" text-anchor="end" fill="' + C.mut +
+      '" font-family="' + css("--font-mono") + '" font-size="11">' + n2(t, 0) + "</text>";
+  });
+  const up = hi.map(p => X(p.x).toFixed(1) + "," + Y(p.v).toFixed(1)).join(" ");
+  const dn = lo.slice().reverse().map(p => X(p.x).toFixed(1) + "," + Y(p.v).toFixed(1)).join(" ");
+  s += '<polygon points="' + up + " " + dn + '" fill="' + css("--fc-band") + '"/>' +
+    '<polygon points="' + up + " " + dn + '" fill="url(#mh' + el.id + ')"/>' +
+    '<path d="' + pathFrom(hi, X, Y) + '" fill="none" stroke="' + css("--fc-center") + '" stroke-opacity=".5" stroke-width="1"/>' +
+    '<path d="' + pathFrom(lo, X, Y) + '" fill="none" stroke="' + css("--fc-center") + '" stroke-opacity=".5" stroke-width="1"/>' +
+    '<path d="' + pathFrom(ct, X, Y) + '" fill="none" stroke="' + css("--fc-center") + '" stroke-width="1.75" stroke-dasharray="6 4"/>';
+  s += '<path d="' + pathFrom(hist, X, Y) + '" fill="none" stroke="' + css("--series-2") +
+    '" stroke-width="2" stroke-linejoin="round"/>';
+  s += '<line x1="' + X(lastX).toFixed(1) + '" y1="' + padT + '" x2="' + X(lastX).toFixed(1) + '" y2="' + plotB +
+    '" stroke="' + C.bs + '" stroke-width="1" stroke-dasharray="4 4"/>' +
+    '<text x="' + (X(lastX) - 6).toFixed(1) + '" y="' + (padT + 10) + '" text-anchor="end" fill="' + C.mut +
+    '" font-family="' + css("--font-ui") + '" font-size="10" letter-spacing=".06em">QUAN SÁT</text>' +
+    '<text x="' + (X(lastX) + 6).toFixed(1) + '" y="' + (padT + 10) + '" fill="' + C.mut +
+    '" font-family="' + css("--font-ui") + '" font-size="10" letter-spacing=".06em">DỰ BÁO (ƯỚC TÍNH)</text>';
+  s += '<circle cx="' + X(lastX).toFixed(1) + '" cy="' + Y(anc.value).toFixed(1) + '" r="4.5" fill="' + css("--anchor") +
+    '" stroke="' + C.pan + '" stroke-width="2"/>' +
+    '<text x="' + (X(lastX) + 11).toFixed(1) + '" y="' + (Y(anc.value) - 9).toFixed(1) + '" fill="' + css("--anchor") +
+    '" font-family="' + css("--font-mono") + '" font-size="12">Neo ' + n2(anc.value, 2) + "</text>";
+  const evx = evs.map((e, i) => ({ e: e, i: i, x: X(ts(e.d)), lbl: shortEvent(e.ten) }))
+    .filter(o => o.x >= padL - 2 && o.x <= padL + iw + 2).sort((p, q) => p.x - q.x);
+  const rowEnd = [-1e9, -1e9];
+  const rowY = narrow ? [0, 20] : [4, 26];
+  evx.forEach(o => {
+    const w = o.lbl.length * 6.2 + 12;
+    let left = o.x - w / 2;
+    o.row = (left < rowEnd[0] + 4) ? 1 : 0;
+    if (o.row === 1 && left < rowEnd[1] + 4) o.row = 0;
+    left = Math.max(padL, Math.min(left, padL + iw - w));
+    rowEnd[o.row] = Math.max(rowEnd[o.row], left + w);
+    o.w = w; o.left = left;
+  });
+  const hl = cfg.hl === undefined ? -1 : cfg.hl;
+  if (!narrow) evx.forEach(o => {
+    const m = msOf(o.e.muc_do), on = hl === o.i;
+    s += '<line x1="' + o.x.toFixed(1) + '" y1="' + (rowY[o.row] + 20) + '" x2="' + o.x.toFixed(1) + '" y2="' + plotB +
+      '" stroke="' + css(m.c) + '" stroke-opacity="' + (on ? "1" : ".45") + '" stroke-width="1"' +
+      (on ? "" : ' stroke-dasharray="2 4"') + "/>";
+  });
+  evx.forEach(o => {
+    const m = msOf(o.e.muc_do), on = hl === o.i;
+    s += '<g><rect x="' + o.left.toFixed(1) + '" y="' + rowY[o.row] + '" width="' + o.w.toFixed(1) +
+      '" height="18" rx="3" fill="' + (on ? css("--panel-inset") : C.pan2) + '" stroke="' + css(m.c) +
+      '" stroke-width="' + (on ? 1.6 : 1) + '"/>' +
+      '<text x="' + (o.left + o.w / 2).toFixed(1) + '" y="' + (rowY[o.row] + 13) + '" text-anchor="middle" fill="' + C.pri +
+      '" font-family="' + css("--font-ui") + '" font-size="10.5" font-weight="600">' + esc(o.lbl) + "</text></g>";
+  });
+  /* nội dung chính (chữ vàng, luôn hiện) — chỉ cho mốc đã diễn ra có tính được số thật.
+     Gộp theo NGÀY (không theo từng mốc riêng) vì 2 mốc "Cao" hay rơi đúng cùng ngày (vd 11/09
+     WASDE + CoT) — nếu vẽ riêng từng mốc sẽ chồng chữ lên nhau do cùng toạ độ X. */
+  const hlByDate = {};
+  evx.forEach(o => { if (o.e._hl) (hlByDate[o.e.d] = hlByDate[o.e.d] || []).push(o.e._hl); });
+  const hlY = rowY[1] + 18 + 12;
+  Object.keys(hlByDate).forEach(d => {
+    const cx = X(ts(d));
+    hlByDate[d].forEach((txt, i) => {
+      s += '<text x="' + cx.toFixed(1) + '" y="' + (hlY + i * 12) +
+        '" text-anchor="middle" fill="' + css("--anchor") +
+        '" font-family="' + css("--font-ui") + '" font-size="10" font-weight="600">' + esc(txt) + "</text>";
+    });
+  });
+  s += '<line x1="' + padL + '" y1="' + laneT + '" x2="' + (padL + iw) + '" y2="' + laneT +
+    '" stroke="' + C.hair + '" stroke-width="1"/>';
+  el._ms = [];
+  evx.forEach(o => {
+    const m = msOf(o.e.muc_do), on = hl === o.i, sz = m.size * (on ? 1.25 : 1);
+    s += '<rect x="' + (o.x - sz / 2).toFixed(1) + '" y="' + (laneMid - sz / 2).toFixed(1) + '" width="' + sz.toFixed(1) +
+      '" height="' + sz.toFixed(1) + '" transform="rotate(45 ' + o.x.toFixed(1) + " " + laneMid.toFixed(1) + ')" ' +
+      (m.hollow ? 'fill="none" stroke="' + css(m.c) + '" stroke-width="1.5"'
+                : 'fill="' + css(m.c) + '" stroke="' + C.pan + '" stroke-width="1.5"') + "/>";
+    el._ms.push({ x: o.x, y: laneMid, e: o.e, i: o.i });
+  });
+  s += '<line x1="' + padL + '" y1="' + axisY + '" x2="' + (padL + iw) + '" y2="' + axisY +
+    '" stroke="' + C.bs + '" stroke-width="1"/>';
+  weekTicks(x0, x1, narrow ? 21 : 14).forEach(t => {
+    s += '<text x="' + X(t.x).toFixed(1) + '" y="' + (axisY + 16) + '" text-anchor="middle" fill="' + C.mut +
+      '" font-family="' + css("--font-mono") + '" font-size="11">' + esc(t.label) + "</text>";
+  });
+  s += "</svg>";
+  el.innerHTML = s;
+  const meta = { X: X, lastX: lastX, hz: hz, notes: cfg.notes || {}, padL: padL, iw: iw };
+  el._mmeta = meta;
+  el.onmousemove = (ev) => {
+    const r = el.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+    const near = (el._ms || []).find(d => Math.abs(d.x - mx) < 14 && Math.abs(d.y - my) < 18);
+    if (near) {
+      const m = msOf(near.e.muc_do);
+      placeTT('<div class="tt-hd">' + esc(near.e.ten) + "</div>" +
+        '<div class="tt-rows"><div class="tt-r"><span class="tt-nm">Ngày</span><span class="tt-v">' + dmy(near.e.d) + "</span></div>" +
+        '<div class="tt-r"><span class="tt-nm">Loại</span><span class="tt-v">' + esc(near.e.loai) + "</span></div>" +
+        '<div class="tt-r"><span class="tt-nm">Mức ảnh hưởng</span><span class="tt-v">' + esc(m.label) + "</span></div></div>" +
+        '<div class="tt-body">' + esc(near.e.mo_ta) + "</div>" +
+        '<div class="tt-src">Nguồn: ' + srcLink(SRC_BY_DOMAIN[near.e.nguon] || "events") + "</div>", ev.clientX, ev.clientY);
+      return;
+    }
+    if (mx > meta.X(meta.lastX) && mx <= meta.padL + meta.iw) {
+      let bh = null;
+      meta.hz.forEach(x => { const d = Math.abs(meta.X(ts(x.date)) - mx); if (!bh || d < bh.d) bh = { d: d, x: x }; });
+      if (bh && bh.d < 60) {
+        const x = bh.x;
+        placeTT('<div class="tt-hd">' + dmy(x.date) + " · " + x.horizon + " phiên</div>" +
+          '<div class="tt-rows"><div class="tt-r"><span class="tt-nm">Low90</span><span class="tt-v">' + n2(x.low90, 2) + "</span></div>" +
+          '<div class="tt-r"><span class="tt-nm">Center</span><span class="tt-v">' + n2(x.center, 2) + "</span></div>" +
+          '<div class="tt-r"><span class="tt-nm">High90</span><span class="tt-v">' + n2(x.high90, 2) + "</span></div></div>" +
+          (meta.notes[String(x.horizon)] ? '<div class="tt-body">' + esc(meta.notes[String(x.horizon)]) + "</div>" : "") +
+          '<div class="tt-src">Nguồn: ' + srcLink("deskEst") + "</div>", ev.clientX, ev.clientY);
+        return;
+      }
+    }
+    hideTT();
+  };
+  el.onmouseleave = hideTT;
+}
+
+/* =====================================================================
+   7. BA MINH HOẠ MỤC 1 (§4.7) — vẽ từ số THẬT, ba hình dạng khác nhau
+   ===================================================================== */
+function figPairbars(fig) {
+  if (!fig || !fig.bars || fig.bars.length < 2) return "";
+  const maxv = fig.scale_max || 70, x0 = 52, bw = 216 - x0;
+  let s = '<svg viewBox="0 0 216 78" width="100%" height="78" role="img" aria-label="So sánh Stocks-to-Use hai niên vụ">';
+  fig.bars.forEach((b, i) => {
+    const y = i * 32 + 4, w = Math.max(4, bw * (b.v / maxv));
+    s += '<text x="0" y="' + (y + 15) + '" fill="' + css("--ink2-panel") + '" font-family="' + css("--font-mono") + '" font-size="11">' + esc(b.label) + "</text>" +
+      '<rect x="' + x0 + '" y="' + y + '" width="' + bw + '" height="22" fill="' + css("--panel-inset") + '"/>' +
+      '<rect x="' + x0 + '" y="' + y + '" width="' + w.toFixed(1) + '" height="22" rx="4" fill="' + css("--series-1") + '"/>' +
+      '<text x="' + (x0 + w - 8).toFixed(1) + '" y="' + (y + 15) + '" text-anchor="end" fill="' + css("--ink1-panel") +
+      '" font-family="' + css("--font-mono") + '" font-size="12" font-weight="600">' + n2(b.v, 1) + "%</text>";
+  });
+  s += '<line x1="' + x0 + '" y1="70" x2="216" y2="70" stroke="' + css("--rule-panel") + '"/>' +
+    '<text x="' + x0 + '" y="78" fill="' + css("--ink3-panel") + '" font-family="' + css("--font-mono") + '" font-size="10">0</text>' +
+    '<text x="216" y="78" text-anchor="end" fill="' + css("--ink3-panel") + '" font-family="' + css("--font-mono") +
+    '" font-size="10">' + n2(maxv, 0) + "%</text></svg>";
+  return '<span class="fig-cap">Stocks-to-Use <span class="scope-chip">' + esc(fig.scope || "") + "</span></span>" + s +
+    '<p style="margin:8px 0 0">' + deltaHtml(fig.delta.v, 1, fig.delta.unit, "stocks") + "</p>";
+}
+function figBignum(fig) {
+  if (!fig) return "";
+  const maxv = fig.scale_max || 500000;
+  let s = '<svg viewBox="0 0 216 78" width="100%" height="78" role="img" aria-label="Thay đổi thương mại bông ba nước">';
+  (fig.bars || []).forEach((b, i) => {
+    const y = i * 25 + 4, w = Math.max(4, 96 * (b.v / maxv));
+    s += '<text x="0" y="' + (y + 11) + '" fill="' + (b.hl ? css("--ink1-panel") : css("--ink3-panel")) +
+      '" font-family="' + css("--font-ui") + '" font-size="10">' + esc(b.label) + " · " + esc(b.tag) + "</text>" +
+      '<rect x="82" y="' + y + '" width="' + w.toFixed(1) + '" height="14" rx="3" fill="' +
+      (b.hl ? css("--series-1") : css("--panel-inset")) + '" stroke="' + (b.hl ? "none" : css("--rule-panel")) + '"/>' +
+      '<text x="' + (82 + w + 5).toFixed(1) + '" y="' + (y + 11) + '" fill="' + (b.hl ? css("--ink1-panel") : css("--ink3-panel")) +
+      '" font-family="' + css("--font-mono") + '" font-size="10">+' + nInt(b.v) + "</text>";
+  });
+  s += "</svg>";
+  return '<span class="fig-cap">' + esc(fig.label || "") + "</span>" +
+    '<span class="bignum">' + esc(fig.value) + '</span> <span style="font-size:13px;color:var(--ink-3)">' + esc(fig.unit) + "</span>" +
+    '<p style="margin:6px 0 12px">' + deltaHtml(fig.delta.v, 0, fig.delta.unit, "activity") + "</p>" + s;
+}
+function figSparkline(vals, lastLabel, delta, weeks) {
+  if (!vals || vals.length < 2) return "";
+  const mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), rng = (mx - mn) || 1;
+  const px = (i) => 4 + 172 * i / (vals.length - 1);
+  const py = (v) => 8 + 32 * (1 - (v - mn) / rng);
+  let d = "";
+  vals.forEach((v, i) => { d += (i ? "L" : "M") + px(i).toFixed(1) + " " + py(v).toFixed(1) + " "; });
+  const lx = px(vals.length - 1), ly = py(vals[vals.length - 1]);
+  return '<span class="fig-cap">Vị thế mua ròng · ' + weeks + " tuần</span>" +
+    '<svg viewBox="0 0 216 48" width="100%" height="48" role="img" aria-label="Xu hướng vị thế mua ròng theo tuần">' +
+    '<path d="' + d.trim() + '" fill="none" stroke="' + css("--series-1") + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<circle cx="' + lx.toFixed(1) + '" cy="' + ly.toFixed(1) + '" r="3.5" fill="' + css("--series-1") +
+    '" stroke="' + css("--panel-2") + '" stroke-width="2"/>' +
+    '<text x="214" y="' + Math.max(12, Math.min(ly - 7, 44)).toFixed(1) + '" text-anchor="end" fill="' + css("--ink1-panel") +
+    '" font-family="' + css("--font-mono") + '" font-size="11" font-weight="600">' + esc(lastLabel) + "</text></svg>" +
+    '<p style="margin:8px 0 0">' + deltaHtml(delta.v, 0, delta.unit, "cot") + "</p>";
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   8. CẤU TRÚC MỤC / SUB-TAB (13 mục điều hướng)
+   ===================================================================== */
+const SECTIONS = [
+  { n: "01", name: "Bản tin USDA", tabs: ["CFTC CoT", "WASDE Cotton", "Cotton: World Markets and Trade"] },
+  { n: "02", name: "Diễn biến thị trường", tabs: ["Vĩ mô", "Dầu & Logistics", "Bông", "Xơ", "Tỷ giá", "Lãi suất"] },
+  { n: "03", name: "Dự báo & khuyến nghị", tabs: ["Hiện trạng & dải dự báo", "Cơ sở & độ tin cậy", "Vị thế & cung–cầu", "Khuyến nghị mua & lịch sự kiện"] }
+];
+const DATA = { trends: null, forecast: null, bulletin: null, index: null };
+const STATE = { sec: 0, tab: 0, snap: null, menu: false, fcAll: false, evSel: -1 };
+
+/* =====================================================================
+   9. MỤC 1 — BẢN TIN USDA (§4.8 + 3 minh hoạ §4.7)
+   ===================================================================== */
+const ORG_MARK = { cot: "CFTC", wasde: "USDA", fas: "FAS" };
+const ITEM_SRC = { cot: "cftc", wasde: "wasde", fas: "fas" };
+const ITEM_FREQ = { cot: FREQ.cot, wasde: FREQ.month, fas: FREQ.month };
+
+function viewBulletin() {
+  const b = DATA.bulletin;
+  if (!b) return noData("Bản tin USDA");
+  const f = DATA.forecast;
+  let h = pageHd("Bản tin USDA", "Bản tin USDA & tín hiệu thị trường kỳ hạn",
+    "Tuần này cơ quan quản lý và thị trường kỳ hạn đang nói gì về cung–cầu bông thế giới, và tin đó còn mới không?",
+    esc(b.refresh_banner) + " Lịch sự kiện đầy đủ → " + jump(2, 3, "mục 3.4 Khuyến nghị mua &amp; lịch sự kiện") + ".");
+  h += '<div class="news-list">';
+  b.items.forEach(it => {
+    const kicker = String(it.kicker || "").replace(/^[^·]+·\s*/, "");
+    let fig = "";
+    if (it.id === "wasde") fig = figPairbars(it.fig);
+    else if (it.id === "fas") fig = figBignum(it.fig);
+    else if (it.id === "cot" && f && f.cot && f.cot.mm_net) {
+      const n = (it.fig && it.fig.weeks) || 26;
+      const vals = f.cot.mm_net.slice(-n).filter(v => v !== null);
+      fig = figSparkline(vals, nInt(vals[vals.length - 1]),
+        (it.fig && it.fig.delta) || { v: null, unit: "hợp đồng" }, vals.length);
+    }
+    h += '<article class="news-card on-panel" id="news-' + esc(it.id) + '"><div class="nc-main">' +
+      '<span class="news-kicker"><span class="org-mark">' + esc(ORG_MARK[it.id] || "") + "</span>" + esc(kicker) + "</span>" +
+      "<h3>" + esc(it.title) + "</h3>" +
+      '<div class="news-meta">' + esc(it.period) + " · " + esc(it.published) + "</div>" +
+      cadence(ITEM_FREQ[it.id] || FREQ.month, dmy(it.report_date), ITEM_SRC[it.id]);
+    if (it.lead) h += '<p class="news-lead">' + esc(it.lead) + "</p>";
+    h += '<p class="news-body">' + esc(it.summary) + "</p>";
+    if (it.implication) h += '<p class="news-body">' + esc(it.implication) + "</p>";
+    if (it.figures) {
+      h += '<div class="tiles tiles-3" style="margin-top:14px">' + it.figures.map(x =>
+        '<div class="tile"><span class="tile-label">' + esc(x.label) + "</span>" +
+        '<span class="tile-value">' + esc(x.value) + '<span class="tile-unit">' + esc(x.unit) + "</span></span>" +
+        '<span class="tile-note">' + esc(x.note) + "</span></div>").join("") + "</div>";
+      h += '<p class="chart-note"><b>Phạm vi 3 thẻ số ở trên:</b> <span class="scope-chip">' +
+        esc(it.figures_scope_chip) + "</span></p>";
+      if (it.us_numbers) h += '<p class="chart-note"><b>Dãy số phạm vi khác:</b> <span class="scope-chip">' +
+        esc(it.us_numbers_scope_chip || "PHẠM VI KHÁC") + "</span> — " + esc(it.us_numbers) + "</p>";
+    }
+    if (it.table) {
+      h += '<div class="table-wrap" style="margin-top:14px"><table><thead><tr>' +
+        it.table.cols.map(c => "<th>" + esc(c) + "</th>").join("") + "</tr></thead><tbody>";
+      it.table.rows.forEach((r, i) => {
+        const isNet = /Net long/i.test(r[0]);
+        h += "<tr" + (i === it.table.highlight_row ? ' class="is-hi"' : "") + "><td>" + esc(r[0]) + "</td><td>" +
+          nInt(r[1]) + "</td><td>" + deltaHtml(r[2], 0, "", isNet ? "cot" : "neutral") + "</td></tr>";
+      });
+      h += "</tbody></table></div>";
+      h += '<p class="chart-note">' + esc(it.table.note) + " Đơn vị: " + esc(it.table.unit) +
+        ". Chỉ dòng <b>vị thế mua ròng</b> được tô màu theo chiều có lợi; các dòng còn lại để trung tính.</p>";
+    }
+    if (it.no_zscore_note) h += xref(esc(it.no_zscore_note) + " " + jump(2, 2, "Xem thanh ngưỡng điểm z tại mục 3.3") + ".");
+    if (it.xref) h += xref(esc(it.xref).replace("mục 3.3 Vị thế &amp; cung–cầu", jump(2, 2, "mục 3.3 Vị thế &amp; cung–cầu")));
+    h += '<p class="nc-next">' + esc(it.next_badge) + "</p>";
+    h += '<div class="news-links">' + it.links.map(l =>
+      '<a class="src-link" href="' + esc(l[1]) + '" target="_blank" rel="noopener">' +
+      esc(String(l[0]).replace(/^[a-z.]+\.gov\s*—\s*/i, "")) + '<span class="src-arrow">↗</span></a>').join("") + "</div>";
+    h += "</div>" + (fig ? '<aside class="nc-fig">' + fig + "</aside>" : "") + "</article>";
+  });
+  h += "</div>";
+  h += '<div class="rule-card on-panel" style="margin-top:18px;max-width:900px"><h3>Hạn chế đã biết của bản tin này</h3>' +
+    b.limits.map(x => '<div class="r"><span class="g">⊘</span><span>' + esc(x) + "</span></div>").join("") +
+    '<div class="r" style="color:var(--ink-3)"><span class="g">◷</span><span>Nghiên cứu nguồn công bố thực hiện ngày ' +
+    dmy(b.research_date) + ".</span></div></div>";
+  return h;
+}
+
+/* =====================================================================
+   10. MỤC 2 — DIỄN BIẾN THỊ TRƯỜNG
+   ===================================================================== */
+const MK = ["Mỹ", "EU", "Nhật Bản", "Hàn Quốc", "Trung Quốc"];
+
+function viewVimo() {
+  const g = DATA.trends && DATA.trends.groups.vimo;
+  if (!g) return noData("Vĩ mô");
+  let h = pageHd("Diễn biến thị trường · Vĩ mô", "Vĩ mô 5 thị trường xuất khẩu chính",
+    "Sức mua ở 5 thị trường xuất khẩu chính đang mạnh hay yếu?",
+    "<b>Khung hiển thị: từ 01/2026</b> (~8 tháng) — khác 12 tháng của các sub-tab còn lại; nguồn không cung cấp dữ liệu trước 01/2026, nên không có so sánh cùng kỳ năm trước.");
+  h += '<div class="grid">';
+  let tiles = "";
+  MK.forEach(m => {
+    const rows = g.gdp[m] || [];
+    const q2 = rows.find(r => r.period === "Q2/2026"), q1 = rows.find(r => r.period === "Q1/2026");
+    const last = rows[rows.length - 1];
+    if (!last) {
+      tiles += '<div class="tile"><span class="tile-label">GDP YoY · ' + esc(m) + "</span>" +
+        '<span class="tile-value is-empty">—</span><span class="tile-note">chưa công bố</span></div>';
+      return;
+    }
+    const dlt = (q2 && q1) ? q2.v - q1.v : null;
+    tiles += '<div class="tile"><span class="tile-label">GDP YoY · ' + esc(m) + "</span>" +
+      '<span class="tile-value">' + n2(last.v, 1) + '<span class="tile-unit">%</span></span>' +
+      deltaHtml(dlt, 1, "điểm % so Q1/2026", "demand", 0.05) +
+      '<span class="tile-note">' + esc(last.period) + "</span></div>";
+  });
+  h += panel({
+    title: "GDP YoY — 5 thị trường", unit: "% YoY",
+    cadence: cadence(FREQ.quarter, "Q2/2026", "te"),
+    body: '<div class="tiles tiles-5">' + tiles + "</div>",
+    note: esc(g.gdp_note) + " Giá trị theo quý được đặt tại tháng cuối quý. Chiều có lợi: cầu tiêu dùng ở thị trường xuất khẩu tăng là <b>thuận lợi</b>."
+  });
+  [["cpi", "CPI YoY — 5 thị trường", "neutral"], ["retail", "Retail Sales YoY — 5 thị trường", "demand"]].forEach(spec => {
+    const key = spec[0], grp = g[key];
+    let mn = Infinity, mx = -Infinity;
+    MK.forEach(m => (grp[m].v || []).forEach(v => { if (v !== null) { mn = Math.min(mn, v); mx = Math.max(mx, v); } }));
+    let cells = "";
+    MK.forEach(m => {
+      const sr = grp[m];
+      const p = sr.labels.map((L, i) => ({ x: g.months.indexOf(L), v: sr.v[i], label: L }));
+      cells += '<div class="sm-cell"><h4>' + esc(m) + "</h4>" +
+        '<p class="cadence">Gần nhất: <span class="mono">' + esc(sr.as_of || "—") + "</span></p>" +
+        chartBox({
+          kind: "line", xkind: "band", padL: 34, padR: 10, yDec: 1, yUnit: "%", ttDec: 1,
+          x0: 0, x1: g.months.length - 1, yMin: mn - 0.6, yMax: mx + 0.6, yTicks: 3,
+          xTicks: g.months.filter((_, i) => i % 3 === 0).map(L => ({ x: g.months.indexOf(L), label: L.slice(0, 3) })),
+          series: [{ name: m + " · " + (key === "cpi" ? "CPI YoY" : "Retail YoY"), color: css("--series-1"), pts: p, marker: "dot", w: 1.75 }]
+        }, 132) + "</div>";
+    });
+    h += panel({
+      title: esc(spec[1]), unit: "% YoY",
+      cadence: cadence(FREQ.month, null, "te"),
+      body: '<div class="sm sm-5">' + cells + "</div>",
+      note: "<b>Vì sao tách 5 panel:</b> 5 thị trường có điểm cuối khác nhau (2 nước tới T08, 3 nước tới T07) — gộp 1 biểu đồ sẽ khiến 3 đường hụt trông như sụt giảm. Đường chỉ vẽ tới quan sát thật cuối cùng của từng nước." +
+        (key === "retail" ? " Tháng 01/2026 của Trung Quốc chưa có số công bố — đường vẽ đứt tại đó, không nối qua. Panel Hàn Quốc có giá trị âm tại T07 (−0,8%) là số thật." : " Lạm phát để <b>trung tính</b>: vừa bào mòn sức mua vừa nâng giá bán danh nghĩa, không có một chiều lợi ích.")
+    });
+  });
+  return h + "</div>";
+}
+
+function viewLogistics() {
+  const g = DATA.trends && DATA.trends.groups.logistics;
+  if (!g) return noData("Dầu & Logistics");
+  let h = pageHd("Diễn biến thị trường · Dầu & Logistics", "Chi phí vận tải biển & năng lượng",
+    "Chi phí đưa hàng đi và chi phí năng lượng đang đi hướng nào?",
+    "<b>Khung hiển thị: từ 01/2026</b> (~8 tháng) — nguồn không cung cấp dữ liệu trước 01/2026.");
+  h += '<div class="grid">';
+  const dr = g.drewry, thin = dr.thin_months || [];
+  const dp = dr.labels.map((L, i) => ({ x: i, v: dr.v[i], label: L }));
+  const segs = []; let cur = [];
+  for (let i = 0; i < dp.length; i++) {
+    cur.push(dp[i]);
+    const a = dp[i].label.split(" ")[0], bn = i + 1 < dp.length ? dp[i + 1].label.split(" ")[0] : null;
+    if (bn && (thin.indexOf(a) >= 0 || thin.indexOf(bn) >= 0)) { segs.push({ pts: cur.concat([dp[i + 1]]), dash: true }); cur = [dp[i + 1]]; }
+  }
+  if (cur.length) segs.push({ pts: cur, dash: false });
+  h += panel({
+    title: "Drewry World Container Index", unit: "USD/40ft",
+    cadence: cadence(FREQ.week, dr.as_of_label || "—", "drewry"),
+    body: chartBox({
+      kind: "line", xkind: "band", yDec: 0, yUnit: "USD/40ft", ttDec: 0, padL: 52,
+      xTicks: dr.labels.map((L, i) => ({ x: i, label: L })).filter((_, i) => i % 3 === 0),
+      series: [{ name: "Drewry WCI", color: css("--series-1"), pts: dp, marker: "dot", w: 1.75, seg: segs, endDot: true }]
+    }, 320),
+    note: "Giai đoạn T04–T06/2026 chỉ có 1 quan sát mỗi tháng, nên độ dốc đoạn này mô tả ít chi tiết hơn phần còn lại (đoạn đó vẽ nét mảnh hơn). " +
+      esc(g.axis_note) + " Cước tăng là <b>tăng chi phí</b> đưa hàng đi."
+  });
+  const br = g.brent_eia;
+  h += panel({
+    title: "Giá dầu Brent — spot theo tuần (EIA)" + chip(br.method), unit: "USD/thùng",
+    cadence: cadence(FREQ.week, br.as_of_label || "—", "eia"),
+    body: chartBox({
+      kind: "line", xkind: "band", yDec: 0, yUnit: "USD/thùng", padL: 44,
+      xTicks: br.labels.map((L, i) => ({ x: i, label: L })).filter((_, i) => i % 3 === 0),
+      series: [{ name: "Brent — spot theo tuần (EIA)", color: css("--series-3"), pts: br.labels.map((L, i) => ({ x: i, v: br.v[i], label: L })), marker: "square", w: 1.75 }]
+    }, 220) +
+      legend([{ c: css("--series-3"), n: "Brent — spot theo tuần · marker vuông = điểm chốt tuần rời rạc", sq: true }]) +
+      xref('Trang còn một chuỗi Brent <b>khác</b>: <i>Brent — giá thanh toán hợp đồng tương lai (ICE)</i>, theo phiên, nằm ở ' +
+        jump(1, 3, "sub-tab 2.4 Xơ") + ' vì là đầu vào chuỗi polyester. <b>Hai chuỗi khác phương pháp đo, không thay thế nhau</b> — tháng 4/2026 lệch <span class="mono">+16,4%</span> (spot theo tuần <span class="mono">118,15</span> vs hợp đồng tương lai <span class="mono">101,49</span>). Không gộp, không lấy trung bình, và không dùng chuỗi kia lấp chỗ trống của chuỗi này.'),
+    note: "Chuỗi hiện dừng ở tháng 8/2026. " + esc(g.axis_note)
+  });
+  return h + "</div>";
+}
+
+function viewBong() {
+  const g = DATA.trends && DATA.trends.groups.bong;
+  if (!g) return noData("Bông");
+  const ICE = [["oct26", "--ice-1", 1.75], ["dec26", "--ice-2", 2.5], ["mar27", "--ice-3", 1.75], ["may27", "--ice-4", 1.75]];
+  const ser = ICE.map(c => {
+    const s = g.ice[c[0]];
+    return { name: "ICE " + s.name, ticker: s.ticker, color: css(c[1]), w: c[2], pts: pts(s), endDot: true };
+  });
+  ser.push({ name: "Cotlook A Index — CFR Far East", ticker: "Cotlook", color: css("--series-2"), w: 1.75, pts: pts(g.cotlook), endDot: true });
+  const oct = g.ice.oct26;
+  const lastOct = oct.d.length ? { x: ts(oct.d[oct.d.length - 1]), v: oct.v[oct.v.length - 1] } : null;
+  let h = pageHd("Diễn biến thị trường · Bông", "Giá bông ICE & Cotlook A Index",
+    "Giá bông đang ở đâu, và các kỳ hạn đang định giá tương lai thế nào?",
+    "<b>Khung hiển thị: 12 tháng gần nhất</b> — nhóm dữ liệu dài nhất và liên tục nhất của trang.");
+  h += '<div class="grid">';
+  h += panel({
+    title: "ICE Cotton No.2 — 4 hợp đồng &amp; Cotlook A Index", unit: "cent/lb",
+    cadence: cadence(FREQ.session, dmy(g.ice_as_of) + " (ICE) · " + dmy(g.cotlook.as_of) + " (Cotlook A Index)", "iceCot"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "cent/lb", endLabels: true, padR: 74,
+      xTicks: timeTicks(ts(g.window_start), ts(g.ice_as_of), 7),
+      series: ser,
+      annos: lastOct ? [{ x: lastOct.x, v: lastOct.v, text: "Oct26 — ngày thông báo giao hàng đầu tiên 24/09/2026|sau mốc này chuỗi ngừng có ý nghĩa tham chiếu", dx: -150, dy: -20 }] : []
+    }, 320) +
+      legend(ICE.map(c => ({ c: css(c[1]), tk: g.ice[c[0]].ticker, n: g.ice[c[0]].name }))
+        .concat([{ c: css("--series-2"), tk: "Cotlook", n: "A Index — CFR Far East" }])),
+    note: "Ramp 1 sắc 4 bậc cho họ kỳ hạn ICE: bậc tối nhất là Oct26 (hợp đồng sắp hết vòng đời, tự lùi về hậu cảnh), bậc sáng nhất là May27. <b>Dec26</b> — hợp đồng tham chiếu của mọi ngưỡng mua ở mục 3.4 — được nhấn bằng nét dày 2,5px, không phá ramp màu. Giá bông tăng là <b>tăng chi phí</b> đầu vào."
+  });
+  const awp = g.awp;
+  h += panel({
+    title: "Adjusted World Price (AWP)" + chip("bậc thang · công bố theo tuần"), unit: "cent/lb",
+    cadence: cadence(FREQ.week, dmy(awp.as_of), "fsa"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "cent/lb",
+      xTicks: timeTicks(ts(awp.steps_d[0]), ts(awp.as_of), 5),
+      series: [{
+        name: "Adjusted World Price", color: css("--series-1"), w: 2, step: true,
+        pts: awp.steps_d.map((d, i) => ({ x: ts(d), v: awp.steps_v[i], label: "Hiệu lực từ " + dmy(d) }))
+      }]
+    }, 220),
+    note: "USDA công bố theo tuần và giữ nguyên mức trong suốt tuần hiệu lực — biểu đồ vẽ dạng bậc thang đúng theo cách công bố, mỗi bậc kéo từ ngày hiệu lực tới ngày hiệu lực kế tiếp. Chuỗi bắt đầu từ " +
+      dmy(awp.first_date) + "."
+  });
+  const fa = DATA.forecast && DATA.forecast.anchor;
+  h += '<div class="s12">' + xref("Cotlook A Index còn xuất hiện ở " + jump(2, 0, "mục 3.1 Hiện trạng &amp; dải dự báo") +
+    " với <b>độ dài và tính liên tục khác</b> vì đó là chuỗi dùng cho mô hình." +
+    (fa ? " Ở đó còn có mức <b>neo hiệu chỉnh " + n2(fa.value, 2) + "</b> khác với quan sát thô " +
+      n2(fa.raw_observed, 2) + " — xem thẻ giải thích bắt buộc tại mục 3.1." : "")) + "</div>";
+  return h + "</div>";
+}
+
+function viewXo() {
+  const g = DATA.trends && DATA.trends.groups.xo;
+  if (!g) return noData("Xơ");
+  const S = g.series;
+  let h = pageHd("Diễn biến thị trường · Xơ", "Chuỗi giá trị xơ tổng hợp",
+    "Chi phí nguyên liệu xơ tổng hợp đang chịu áp lực từ khâu nào của chuỗi?",
+    "<b>Khung hiển thị: 12 tháng gần nhất.</b> Bố cục đọc từ trên xuống theo chuỗi giá trị: dầu thô → PX → PTA/MEG → PSF/DTY.");
+  h += "<div>";
+  function step(nn, lbl, inner, last) {
+    return '<div class="chain"><div class="chain-step"><span class="n">' + nn + '</span><span class="lbl">' + lbl + "</span>" +
+      (last ? "" : '<span class="chev">▾</span>') + "</div><div>" + inner + "</div></div>";
+  }
+  h += step("01", "Đầu chuỗi", panel({
+    span: "", title: "Brent — giá thanh toán hợp đồng tương lai (ICE)" + chip(S.brent_ice.method), unit: S.brent_ice.unit,
+    cadence: cadence(FREQ.session, dmy(S.brent_ice.as_of), "ice"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "USD/thùng",
+      xTicks: timeTicks(ts(S.brent_ice.d[0]), ts(S.brent_ice.as_of), 7),
+      series: [{ name: "Brent — hợp đồng tương lai (ICE)", color: css("--series-1"), pts: pts(S.brent_ice), w: 1.75, endDot: true }]
+    }, 220) +
+      legend([{ c: css("--series-1"), n: "Brent — hợp đồng tương lai · đường liền, dot ở điểm cuối = chuỗi theo phiên liên tục" }]) +
+      xref("Đây <b>không phải</b> chuỗi Brent ở " + jump(1, 1, "mục 2.2 Dầu &amp; Logistics") +
+        '. Mục 2.2 dùng <i>Brent — spot theo tuần (EIA)</i>, dừng ở tháng 8/2026. Hai chuỗi lệch tới <span class="mono">+16,4%</span> tại tháng 4/2026 — hiển thị song song có chủ đích, không chọn một chuỗi và không lấy trung bình.')
+  }));
+  h += step("02", "Giữa chuỗi", panel({
+    span: "", title: "Paraxylene (PX) · PTA · MEG", unit: "USD/MT",
+    cadence: cadence(FREQ.session, dmy(S.px.as_of), "emerging"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "USD/MT", endLabels: true, padR: 62,
+      xTicks: timeTicks(ts(S.px.d[0]), ts(S.px.as_of), 7),
+      series: [
+        { name: "Paraxylene (PX), FOB Korea", ticker: "PX", color: css("--series-1"), pts: pts(S.px), endDot: true },
+        { name: "PTA nhập khẩu, CIF China", ticker: "PTA", color: css("--series-2"), pts: pts(S.pta), endDot: true },
+        { name: "MEG nhập khẩu, CIF China", ticker: "MEG", color: css("--series-3"), pts: pts(S.meg), endDot: true }
+      ]
+    }, 260) +
+      legend([{ c: css("--series-1"), tk: "PX", n: "Paraxylene, FOB Korea" },
+        { c: css("--series-2"), tk: "PTA", n: "nhập khẩu, CIF China" },
+        { c: css("--series-3"), tk: "MEG", n: "nhập khẩu, CIF China" }]),
+    note: "Ba chuỗi cùng đơn vị USD/MT nên dùng <b>một trục duy nhất</b>."
+  }));
+  h += step("03", "Sản phẩm — PSF", panel({
+    span: "", title: "PSF Trung Quốc (direct-spun) 1.4D×38mm" + chip("giá theo phiên, từ " + dmy(S.psf.cut_from)), unit: S.psf.unit,
+    cadence: cadence(FREQ.session, dmy(S.psf.as_of), "emerging"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 2, yUnit: "USD/kg",
+      xTicks: timeTicks(ts(S.psf.d[0]), ts(S.psf.as_of), 7),
+      series: [{ name: "PSF Trung Quốc (direct-spun)", color: css("--series-1"), pts: pts(S.psf), w: 1.75, endDot: true }]
+    }, 220),
+    note: "Biểu đồ chỉ vẽ chuỗi giá theo phiên từ 09/2025. Giai đoạn 01–08/2025 (" + S.psf.excluded_n +
+      " điểm) là chỉ báo <b>trung bình tháng</b> — cùng mặt hàng, cùng quy cách, nhưng khác phương pháp đo, cố ý không nối vào đường này."
+  }));
+  h += step("04", "Sản phẩm — DTY", panel({
+    span: "", title: "DTY Trung Quốc (Qianqing) 150D/48F", unit: S.dty.unit,
+    cadence: cadence(FREQ.session, dmy(S.dty.as_of), "emerging"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "Yuan/MT",
+      xTicks: timeTicks(ts(S.dty.d[0]), ts(S.dty.as_of), 7),
+      series: [{ name: "DTY Trung Quốc (Qianqing) 150D/48F", color: css("--series-5"), pts: pts(S.dty), w: 1.75, endDot: true }]
+    }, 220),
+    note: "Đơn vị <span class=\"mono\">Yuan/MT</span> khác ba biểu đồ trên nên để biểu đồ riêng — không dùng hai trục y."
+  }), true);
+  return h + "</div>";
+}
+
+function viewTygia() {
+  const g = DATA.trends && DATA.trends.groups.tygia;
+  if (!g) return noData("Tỷ giá");
+  const u = g.fx["USD/VND"];
+  let h = pageHd("Diễn biến thị trường · Tỷ giá", "Tỷ giá VND — 5 cặp tiền",
+    "Tỷ giá đang cộng hay trừ vào giá vốn nhập khẩu và doanh thu xuất khẩu?",
+    "<b>Khung hiển thị: 12 tháng gần nhất.</b> Nhóm này để <b>trung tính về màu</b>: doanh nghiệp vừa nhập nguyên liệu bằng USD vừa thu USD từ xuất khẩu — tô xanh/đỏ ở đây là nói sai bằng màu.");
+  h += '<div class="grid">';
+  h += panel({
+    title: "USD/VND" + chip("đường chính = bình quân · dải = biên mua chuyển khoản–bán"), unit: "VND",
+    cadence: cadence(FREQ.week, dmy(u.as_of), "vcb"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "VND", ttDec: 0, padL: 56,
+      xTicks: timeTicks(ts(u.d[0]), ts(u.as_of), 7),
+      areas: [{ fill: "rgba(74,143,224,.13)", lo: u.d.map((d, i) => ({ x: ts(d), v: u.buy[i] })), hi: u.d.map((d, i) => ({ x: ts(d), v: u.sell[i] })) }],
+      series: [
+        { name: "Bình quân", color: css("--series-1"), w: 2.5, pts: u.d.map((d, i) => ({ x: ts(d), v: u.avg[i], label: dmy(d) })), marker: "dot", endDot: true },
+        { name: "Mua chuyển khoản", color: "rgba(74,143,224,.5)", w: 1, pts: u.d.map((d, i) => ({ x: ts(d), v: u.buy[i], label: dmy(d) })) },
+        { name: "Bán", color: "rgba(74,143,224,.5)", w: 1, pts: u.d.map((d, i) => ({ x: ts(d), v: u.sell[i], label: dmy(d) })) }
+      ]
+    }, 320) +
+      legend([{ c: css("--series-1"), n: "Bình quân (đường chính)" },
+        { c: "rgba(74,143,224,.35)", n: "dải = biên mua chuyển khoản–bán (dữ liệu thật trong nguồn, KHÔNG phải khoảng tin cậy)", bd: true }]),
+    note: esc(g.freq_note) + " Mọi quan sát thật đều có marker, không nội suy."
+  });
+  let cells = "";
+  ["CNY/VND", "EUR/VND", "GBP/VND", "JPY/VND"].forEach(k => {
+    const s = g.fx[k];
+    cells += '<div class="sm-cell"><h4>' + esc(k) + " · bình quân</h4>" +
+      '<p class="cadence">Gần nhất: <span class="mono">' + dmy(s.as_of) + "</span></p>" +
+      chartBox({
+        kind: "line", xkind: "time", yDec: 0, yUnit: "VND", ttDec: 0, padL: 46, padR: 10,
+        xTicks: timeTicks(ts(s.d[0]), ts(s.as_of), 3),
+        series: [{ name: k + " · bình quân", color: css("--series-1"), pts: s.d.map((d, i) => ({ x: ts(d), v: s.avg[i], label: dmy(d) })), w: 1.75, marker: "dot", endDot: true }]
+      }, 150) + "</div>";
+  });
+  h += panel({
+    title: "CNY · EUR · GBP · JPY / VND — đường bình quân", unit: "VND",
+    cadence: cadence(FREQ.week, dmy(u.as_of), "vcb"),
+    body: '<div class="sm sm-4">' + cells + "</div>",
+    note: "Mỗi panel dùng thang VND riêng vì mức 4 cặp chênh nhau hàng chục lần — không chung trục, không dùng hai trục y. Biên mua chuyển khoản–bán chỉ hiển thị ở biểu đồ USD/VND phía trên."
+  });
+  return h + "</div>";
+}
+
+function viewLaisuat() {
+  const g = DATA.trends && DATA.trends.groups.laisuat;
+  if (!g) return noData("Lãi suất");
+  const cb = g.cb, hd = g.huydong;
+  const COLORS = ["--series-1", "--series-2", "--series-3", "--series-4", "--series-5"];
+  const ser = cb.order.map((nm, i) => ({ name: nm, ticker: cb.series[nm].ticker, color: css(COLORS[i]), w: 2, step: true, pts: pts(cb.series[nm]) }));
+  const bok = cb.bok_callout;
+  let h = pageHd("Diễn biến thị trường · Lãi suất", "Lãi suất điều hành & huy động",
+    "Chi phí vốn quốc tế và trong nước đang ở mặt bằng nào?",
+    "<b>Khung hiển thị: 20 tháng liền mạch</b> cho lãi suất điều hành. Nhóm này để <b>trung tính về màu</b> — là bối cảnh chi phí vốn, không phải chỉ tiêu lợi nhuận trực tiếp của người đọc trang này.");
+  h += '<div class="grid">';
+  h += panel({
+    title: "Lãi suất điều hành — 5 ngân hàng trung ương" + chip("bậc thang · thay đổi rời rạc theo quyết định họp"), unit: "%/năm",
+    cadence: cadence(FREQ.cbmeet, dmy(cb.series[cb.order[0]].as_of), "te"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 2, yUnit: "%/năm", endLabels: true, padR: 58,
+      xTicks: timeTicks(ts(cb.series[cb.order[0]].d[0]), ts(cb.series[cb.order[0]].as_of), 7),
+      series: ser,
+      annos: bok.value !== null ? [{ x: ts(bok.date), v: bok.value, text: "BOK " + bok.label + " = " + n2(bok.value, 2) + "%", dx: -110, dy: -30 }] : []
+    }, 320) +
+      legend(cb.order.map((nm, i) => ({ c: css(COLORS[i]), tk: cb.series[nm].ticker, n: nm }))),
+    note: "Phạm vi: <b>không bao gồm lãi suất điều hành của Ngân hàng Nhà nước Việt Nam</b>. <b>Minh bạch chênh lệch, không giấu:</b> " +
+      esc(bok.note)
+  });
+  let rows = "";
+  hd.rows.forEach(r => {
+    rows += "<tr><td>" + esc(r.bank) + "</td>";
+    r.v.forEach((v, i) => {
+      rows += "<td>" + (v === null ? "—" : n2(v, 2)) +
+        '<span class="ext">' + deltaHtml(r.delta[i], 2, "", "neutral") + "</span></td>";
+    });
+    rows += "</tr>";
+  });
+  h += panel({
+    title: "Lãi suất huy động — 4 ngân hàng thương mại × 6 kỳ hạn" + chip("bảng so sánh tại 1 mốc"), unit: "%/năm",
+    cadence: cadence(FREQ.bankrate, dmy(hd.as_of), "banks"),
+    body: '<div class="table-wrap"><table><thead><tr><th>Ngân hàng</th>' +
+      hd.tenors.map(t => "<th>" + t + " tháng<br><span style=\"font-weight:400;text-transform:none\">Δ so " + dmy(hd.baseline) + "</span></th>").join("") +
+      "</tr></thead><tbody>" + rows + "</tbody></table></div>",
+    note: "Bảng so sánh tại thời điểm gần nhất (<span class=\"mono\">" + dmy(hd.as_of) +
+      "</span>), kèm chênh lệch so mốc <span class=\"mono\">" + dmy(hd.baseline) +
+      "</span>. Chuỗi hiện mới có " + hd.dates.length + " mốc ghi nhận nên chưa vẽ xu hướng. " +
+      esc((hd.src_note || []).join("; ")) + "."
+  });
+  return h + "</div>";
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   11. MỤC 3 — DỰ BÁO & KHUYẾN NGHỊ (chỉ Bông)
+   ===================================================================== */
+/** Mốc tham chiếu để đếm ngược: mốc dữ liệu MỚI NHẤT đang hiển thị — KHÔNG Date.now() */
+function refMark() {
+  const f = DATA.forecast, g = DATA.trends && DATA.trends.groups;
+  const marks = [DATA.bulletin && DATA.bulletin.research_date, f && f.cot && f.cot.as_of, f && f.data_as_of];
+  if (g) [g.bong.ice_as_of, g.xo.series.px.as_of, g.tygia.fx["USD/VND"].as_of].forEach(x => marks.push(x));
+  return marks.filter(Boolean).sort().pop();
+}
+/** §4.12 confidence-band — thành phần nổi bật nhất mục 3, hiển thị ở cả 4 sub-tab.
+ *  KHÔNG sticky (bỏ theo phản hồi user 11/09/2026 — sticky che nội dung, khó nhìn khi cuộn).
+ *  Nếu áp lại spec cũ có ghi "sticky", ĐỪNG tự thêm lại position:sticky ở .confidence-band. */
+function confidenceBand() {
+  const f = DATA.forecast;
+  if (!f) return "";
+  const ref = refMark(), left = daysBetween(ref, f.expiry_date), expired = left <= 0;
+  const mae = f.backtest.map(b => b["Naive (RW)"]).filter(Boolean);
+  const hzs = f.backtest.map(b => b.horizon);
+  const evs = (f.events || []).filter(e => e.d === f.expiry_date);
+  return '<section class="confidence-band on-panel">' +
+    '<div class="cb-grid">' +
+      '<div class="cb-zone"><span class="cb-big">Dải 90%</span>' +
+      "<p>9 trên 10 khả năng giá nằm trong dải hiển thị. Bàn không công bố một con số dự báo điểm.</p></div>" +
+      '<div class="cb-zone"><span class="cb-cap">Sai số đo được</span><div class="cb-nums">' +
+        mae.map((m, i) => "<span><b>±" + n2(m.mae, 2) + "</b><i>" + hzs[i] + " phiên</i></span>").join("") +
+      "</div><p>sai số tuyệt đối trung bình của phương pháp tham chiếu · cent/lb</p></div>" +
+      '<div class="cb-zone"><span class="cb-cap">Hiệu lực</span>' +
+      '<p>Tới <span class="mono">' + dmy(f.expiry_date) + "</span></p>" +
+      '<span class="cb-count' + (expired ? " is-expired" : "") + '">' +
+        (expired ? "Đã quá mốc làm mới" : "Còn " + left + " ngày") + "</span>" +
+      (expired
+        ? '<p class="cb-ev">Số đang hiển thị dựa trên dữ liệu trước mốc làm mới — cần chạy lại mô hình trước khi dùng để ra quyết định.</p>'
+        : '<p class="cb-ev">Làm mới bởi: ' + (evs.length ? evs.map(e => esc(e.ten)).join(" · ") : "các mốc công bố trong kỳ") +
+          '. Đếm ngược tính theo mốc dữ liệu mới nhất đang hiển thị (<span class="mono">' + dmy(ref) + "</span>), không theo đồng hồ máy người xem.</p>") +
+      "</div>" +
+    "</div>" +
+    '<p class="cb-foot">Trên chuỗi này, mô hình ARIMA <b>không vượt được</b> phép so sánh “giá hôm nay giữ nguyên” ở cả 3 chân trời. ' +
+    "Vì vậy bàn công bố <b>dải và đường cong kỳ hạn</b>, không công bố dự báo điểm. Chi tiết đo lường → " +
+    jump(2, 1, "mục 3.2 Cơ sở &amp; độ tin cậy") + ".</p>" +
+    '<p class="cb-disclaimer">Miễn trừ trách nhiệm: nội dung dự báo và khuyến nghị nêu trên chỉ mang tính chất tham khảo, ' +
+    "được xây dựng trên dữ liệu và mô hình thống kê sẵn có tại thời điểm công bố; không cấu thành khuyến nghị đầu tư hay " +
+    "cam kết về diễn biến giá trong tương lai. Quyết định giao dịch, mua sắm nguyên liệu của doanh nghiệp cần dựa trên " +
+    "tình hình thực tế và kinh nghiệm chuyên môn của chính doanh nghiệp.</p></section>";
+}
+
+/* ---- 3.1 Hiện trạng & dải dự báo ---- */
+function viewFc1() {
+  const f = DATA.forecast;
+  if (!f) return noData("Dự báo");
+  const a = f.actual, hz = f.horizons, anc = f.anchor;
+  const lastX = ts(a.d[a.d.length - 1]);
+  let h = pageHd("Dự báo & khuyến nghị", "Hiện trạng & dải dự báo",
+    "Giá bông có thể đi trong khoảng nào từ nay tới cuối tháng 9, và mốc nào làm nó lệch?",
+    "<b>Khung hiển thị: 3 tháng lịch sử + chân trời dự báo tới " + dmy(hz[hz.length - 1].date) + ".</b>");
+  h += confidenceBand();
+  h += '<div class="grid">';
+  h += panel({
+    span: "s8", title: "Dải dự báo &amp; mốc sự kiện trong kỳ", unit: "cent/lb",
+    cadence: cadence(FREQ.model, dmy(f.data_as_of), "deskEst"),
+    body: chartBox({
+      actual: a, horizons: hz, anchor: anc,
+      events: f.events.map(e => Object.assign({}, e, { _hl: eventHighlight(e, f) })), notes: f.notes,
+      x0: lastX - 92 * 86400000, hl: STATE.evSel
+    }, 380, drawMilestone),
+    note: "Mỗi hình thoi là một mốc công bố trong kỳ. Vạch dóng cho thấy mốc đó rơi vào đoạn nào của dải dự báo. " +
+      "<b>Chữ vàng</b> cạnh mốc là nội dung chính đã diễn ra tại đúng mốc đó. " +
+      "Ba mốc lớn — báo cáo cung–cầu, vị thế đầu cơ và quyết định lãi suất — cùng rơi trong khoảng 11–16/09, " +
+      "đoạn bất định lớn nhất của chân trời, gắn với khuyến nghị Lớp 2 ở " + jump(2, 3, "mục 3.4") + ". " +
+      "Màu hình thoi là <b>thang cường độ ảnh hưởng</b>, không phải thang tốt/xấu."
+  });
+  h += panel({
+    span: "s4", title: "Bảng sự kiện",
+    cadence: cadence(FREQ.model, dmy(f.data_as_of), "events"),
+    body: '<div class="table-wrap"><table class="narrow"><thead><tr><th>Ngày</th><th style="text-align:left">Sự kiện</th><th>Mức ảnh hưởng</th></tr></thead><tbody>' +
+      f.events.map((e, i) => '<tr class="ev-row' + (STATE.evSel === i ? " is-sel" : "") + '" data-ev="' + i + '" tabindex="0">' +
+        "<td>" + dm(e.d) + '</td><td class="txt">' + esc(shortEvent(e.ten)) + "</td><td><span class=\"ms-pill " +
+        msPill(e.muc_do) + '">' + esc(msOf(e.muc_do).label) + "</span></td></tr>").join("") +
+      "</tbody></table></div>",
+    note: "Bấm một dòng để làm nổi đúng hình thoi và vạch dóng tương ứng trên biểu đồ bên trái. Danh sách này và dòng thời gian ở " +
+      jump(2, 3, "mục 3.4") + " luôn cùng số dòng, cùng thứ tự."
+  });
+  // thẻ neo + bảng dải theo hàng ngang (cân đối) + thẻ giải thích bắt buộc
+  h += '<div class="s12" style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">' +
+    '<div class="panel on-panel" style="flex:0 0 260px"><div class="tile"><span class="tile-label">Neo hiệu chỉnh · cơ sở của dải</span>' +
+    '<span class="tile-value">' + n2(anc.value, 2) + '<span class="tile-unit">cent/lb</span></span>' +
+    '<span class="delta is-neutral"><span>■</span> quan sát thô ' + n2(anc.raw_observed, 2) + " · " + dmy(anc.raw_observed_date) + "</span>" +
+    '<span class="tile-note">giá trị ước tính, không phải số công bố</span></div>' +
+    cadence(FREQ.model, dmy(f.data_as_of), "deskEst") + "</div>" +
+    '<div style="flex:1 1 360px">' + panel({
+      span: "", title: "Dải 90% theo 3 chân trời", unit: "cent/lb",
+      cadence: cadence(FREQ.model, dmy(f.data_as_of), "deskEst"),
+      body: '<div class="table-wrap"><table class="narrow"><thead><tr><th>Chân trời</th><th>Low90</th><th>Center</th><th>High90</th></tr></thead><tbody>' +
+        hz.map(x => "<tr><td>" + x.horizon + " phiên · " + dm(x.date) + "</td><td>" + n2(x.low90, 2) +
+          "</td><td>" + n2(x.center, 2) + "</td><td>" + n2(x.high90, 2) + "</td></tr>").join("") +
+        "</tbody></table></div>",
+      note: "Dải bất định để <b>trung tính về màu</b>: rộng hay hẹp đều không phải tin tốt hay tin xấu."
+    }) + "</div></div>";
+  h += '<div class="s12">' + xref("<b>Vì sao dùng " + n2(anc.value, 2) + " chứ không phải " + n2(anc.raw_observed, 2) + "?</b> " +
+    esc(anc.why) + " Trang chỉ đặt hai con số này cạnh nhau <b>khi có thẻ giải thích này</b>. Chuỗi quan sát thô đầy đủ nằm ở " +
+    jump(1, 2, "mục 2.3 Bông") + ".") + "</div>";
+  // supporting: fan chart bối cảnh
+  const cutAll = STATE.fcAll, x0 = cutAll ? ts(a.cut_from) : lastX - 184 * 86400000;
+  const lo = [{ x: lastX, v: anc.value }].concat(hz.map(x => ({ x: ts(x.date), v: x.low90 })));
+  const hi = [{ x: lastX, v: anc.value }].concat(hz.map(x => ({ x: ts(x.date), v: x.high90 })));
+  const ct = [{ x: lastX, v: anc.value, label: "Neo hiệu chỉnh " + dmy(f.data_as_of) }]
+    .concat(hz.map(x => ({ x: ts(x.date), v: x.center, label: dmy(x.date) + " · " + x.horizon + " phiên", note: f.notes[String(x.horizon)] })));
+  h += panel({
+    span: "s12", title: "Bối cảnh dài hơn — Cotlook A Index quan sát &amp; dải dự báo", unit: "cent/lb",
+    hdExtra: '<span class="toggle"><button data-fc="0" class="' + (cutAll ? "" : "is-active") + '">6 tháng</button>' +
+      '<button data-fc="1" class="' + (cutAll ? "is-active" : "") + '">toàn chuỗi</button></span>',
+    cadence: cadence(FREQ.model, dmy(a.as_of), "deskEst"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "cent/lb", padR: 20,
+      x0: x0, x1: ts(hz[hz.length - 1].date) + 2 * 86400000,
+      xTicks: timeTicks(x0, ts(hz[hz.length - 1].date), 6),
+      areas: [{ lo: lo, hi: hi, fill: css("--fc-band"), hatch: true }],
+      vlines: [{ x: lastX, color: css("--rule-panel"), dash: true, label: "DỰ BÁO (ƯỚC TÍNH)" }],
+      series: [
+        { name: "Cotlook A Index (quan sát)", color: css("--series-2"), w: 1.75, pts: pts(a), endDot: true },
+        { name: "Center (ước tính)", color: css("--fc-center"), w: 1.75, dash: true, pts: ct },
+        { name: "High90", color: "rgba(134,182,239,.5)", w: 1, pts: hi },
+        { name: "Low90", color: "rgba(134,182,239,.5)", w: 1, pts: lo }
+      ]
+    }, 220) +
+      legend([{ c: css("--series-2"), n: "Cotlook A Index — quan sát thật" },
+        { c: css("--fc-center"), n: "Center (nét đứt) — giá trị ước tính" },
+        { c: "rgba(74,143,224,.3)", n: "dải 90%, phủ gạch chéo = vùng dự báo", bd: true }]),
+    note: "Trục lịch sử bắt đầu từ " + dmy(a.cut_from) + " — thời điểm chuỗi chuyển sang tần suất theo phiên. " +
+      "Biểu đồ này vẽ cùng một dải với biểu đồ mốc sự kiện ở trên nhưng <b>khác khung thời gian</b> (trục theo tháng, không có làn hình thoi) — không phải lặp."
+  });
+  return h + "</div>";
+}
+
+/* ---- 3.2 Cơ sở & độ tin cậy ---- */
+function viewFc2() {
+  const f = DATA.forecast;
+  if (!f) return noData("Dự báo");
+  const cv = f.curve, ICEC = { Oct26: "--ice-1", Dec26: "--ice-2", Mar27: "--ice-3", May27: "--ice-4" };
+  let h = pageHd("Dự báo & khuyến nghị", "Cơ sở & độ tin cậy",
+    "Dựa vào đâu mà tin dải này, và nó sai được bao nhiêu?");
+  h += confidenceBand();
+  h += '<div class="grid">';
+  const first = cv.points[0], last = cv.points[cv.points.length - 1];
+  h += panel({
+    span: "s12", title: "Đường cong kỳ hạn ICE tại " + dmy(cv.date) + chip("ảnh chụp 1 ngày, không phải chuỗi theo thời gian"), unit: cv.unit,
+    cadence: cadence(FREQ.model, dmy(cv.date), "ice"),
+    body: chartBox({
+      kind: "bar", xkind: "band", yDec: 0, yUnit: "cent/lb", padT: 26,
+      xTicks: cv.points.map((p, i) => ({ x: i, label: p.key })),
+      series: [{ name: "Đường cong kỳ hạn", color: css("--ice-2"), pts: cv.points.map((p, i) => ({ x: i, v: p.v, label: p.contract, color: css(ICEC[p.key]) })) }]
+    }, 280),
+    note: "<b>" + n2(first.v, 2) + " → " + n2(last.v, 2) +
+      " cent/lb</b> — thị trường đang định giá kỳ hạn xa cao hơn kỳ hạn gần (contango). Đây là dự báo của chính thị trường kỳ hạn, không phải mô hình thống kê nội bộ."
+  });
+  let rows = "";
+  f.backtest.forEach(b => {
+    const nv = b["Naive (RW)"], ar = b["ARIMA(1,1,1)"];
+    const worse = ar && nv && ar.mae > nv.mae;
+    rows += "<tr><td>" + b.horizon + " phiên</td><td>" + n2(nv.mae, 3) + "</td><td>" + n2(nv.rmse, 3) + "</td><td>" +
+      n2(ar.mae, 3) + (worse ? '<span class="ext"><span class="delta is-bad"><span>▲</span> <i>kém hơn</i></span></span>' : "") +
+      "</td><td>" + n2(ar.rmse, 3) + "</td><td>" + nInt(b.n) + "</td></tr>";
+  });
+  h += panel({
+    span: "s8", title: "Backtest walk-forward — giữ nguyên giá (naive) vs ARIMA(1,1,1)", unit: "MAE / RMSE · cent/lb",
+    cadence: cadence(FREQ.model, dmy(f.data_as_of), "deskMeas"),
+    body: '<div class="table-wrap"><table><thead><tr><th>Chân trời</th><th>Naive · MAE</th><th>Naive · RMSE</th>' +
+      "<th>ARIMA · MAE</th><th>ARIMA · RMSE</th><th>Số điểm</th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
+      '<div class="verdict">ARIMA(1,1,1) thua phép so sánh giữ nguyên giá ở cả 3 chân trời → bàn không công bố dự báo điểm.</div>',
+    note: "Bảng, không phải biểu đồ — 3 chân trời là quá ít điểm để vẽ. Sai số để <b>trung tính về màu</b>; chỉ ô ARIMA thua naive được đánh dấu."
+  });
+  h += panel({
+    span: "s4", title: "Vì sao dùng dải + đường cong kỳ hạn, không dùng dự báo điểm",
+    cadence: cadence(FREQ.model, dmy(f.data_as_of), "deskEst"),
+    body: '<div class="news-body" style="font-size:13.5px;margin-top:0">Giá bông gần <b>bước ngẫu nhiên</b>: mô hình chuỗi thời gian không đánh bại được chính mức giá hiện tại, và bảng backtest bên cạnh là bằng chứng đo được của điều đó — không phải nhận định.<br><br>Vì vậy trang trình bày hai thứ trung thực hơn một con số: (1) <b>dải 90%</b> mô tả biên độ biến động có thể xảy ra; (2) <b>đường cong kỳ hạn ICE</b> — mức giá mà chính thị trường đang sẵn sàng giao dịch cho từng kỳ hạn.<br><br>Mọi vùng ước tính trên trang đều được phủ gạch chéo và vẽ nét đứt để không bị đọc nhầm thành quan sát.</div>'
+  });
+  return h + "</div>";
+}
+
+/* ---- 3.3 Vị thế & cung–cầu ---- */
+function viewFc3() {
+  const f = DATA.forecast;
+  if (!f) return noData("Dự báo");
+  const c = f.cot, z = c.z_last, thr = c.z_threshold;
+  const ZMIN = -3, ZMAX = 3;
+  const pct = (v) => ((Math.max(ZMIN, Math.min(ZMAX, v)) - ZMIN) / (ZMAX - ZMIN) * 100);
+  let h = pageHd("Dự báo & khuyến nghị", "Vị thế & cung–cầu",
+    "Dòng tiền đầu cơ và cán cân cung–cầu đang nghiêng về đâu?");
+  h += confidenceBand();
+  h += '<div class="grid">';
+  const zi = c.z.map((v, i) => ({ v: v, i: i })).filter(x => x.v !== null);
+  const sparkFrom = zi.length ? zi[0].i : 0;
+  h += panel({
+    span: "s12", title: "Vị thế mua ròng của quỹ đầu cơ — điểm z" + chip("thanh ngưỡng, không phải line chart"), unit: "điểm z",
+    cadence: cadence(FREQ.cot, dmy(c.as_of), "cotZ"),
+    body: '<div class="gauge-scale"><span>−3</span><span>−1,8</span><span>0</span><span>+1,8</span><span>+3</span></div>' +
+      '<div class="gauge"><div class="viol" style="left:' + pct(thr) + '%;right:0"></div>' +
+      '<div class="thr" style="left:' + pct(thr) + '%"></div></div>' +
+      '<div class="gauge-needle"><div class="n" style="left:' + pct(z) + '%">' +
+      '<div class="tri">▲</div><div class="v">' + n2(z, 2) + "</div></div></div>" +
+      '<div class="gauge-note"><span class="mono">!</span><span>z = ' + n2(z, 2) + " > " + n2(thr, 1) +
+      " — vị thế mua đầu cơ đang cực đoan → hoãn Lớp 3. Xem trạng thái <b>Đạt ngưỡng</b> ở bảng cảnh báo giảm sâu tại " +
+      jump(2, 3, "mục 3.4") + ".</span></div>" +
+      '<div style="margin-top:14px">' + chartBox({
+        kind: "line", xkind: "time", yDec: 1, yUnit: "điểm z", padL: 34, padT: 8, padB: 20,
+        xTicks: timeTicks(ts(c.d[sparkFrom]), ts(c.as_of), 5),
+        series: [
+          { name: "điểm z vị thế mua ròng", color: css("--series-1"), w: 1.5, endDot: true, pts: c.d.slice(sparkFrom).map((d, i) => ({ x: ts(d), v: c.z[sparkFrom + i], label: dmy(d) })) },
+          { name: "ngưỡng 1,8", color: css("--bad-panel"), w: 1, dash: true, pts: [{ x: ts(c.d[sparkFrom]), v: thr, label: "ngưỡng" }, { x: ts(c.as_of), v: thr, label: "ngưỡng" }] }
+        ]
+      }, 90) + "</div>",
+    note: "Đường phụ là bối cảnh lịch sử của điểm z, nét đứt đỏ là ngưỡng 1,8. <b>Điểm z là số dẫn xuất</b> — chuỗi gốc do CFTC công bố, phép chuẩn hoá là ước tính của bàn. Vị thế mua đầu cơ dày lên là <b>rủi ro giá lên</b> với người mua bông."
+  });
+  h += panel({
+    span: "s6", title: "Vị thế mua ròng &amp; tổng vị thế mở", unit: "hợp đồng",
+    cadence: cadence(FREQ.cot, dmy(c.as_of), "cftc"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "hợp đồng", ttDec: 0, padL: 60,
+      xTicks: timeTicks(ts(c.d[0]), ts(c.as_of), 6),
+      series: [
+        { name: "Tổng vị thế mở", color: css("--series-3"), w: 1.5, pts: c.d.map((d, i) => ({ x: ts(d), v: c.oi[i], label: dmy(d) })), endDot: true },
+        { name: "Vị thế mua ròng của quỹ đầu cơ", color: css("--series-1"), w: 1.75, pts: c.d.map((d, i) => ({ x: ts(d), v: c.mm_net[i], label: dmy(d) })), endDot: true }
+      ],
+      annos: (c.mm_net.length ? [{
+        x: ts(c.d[c.d.length - 1]), v: c.mm_net[c.mm_net.length - 1],
+        text: "MM net long " + nInt(c.mm_net[c.mm_net.length - 1]) + " hợp đồng|z-score " + n2(z, 2) + " (>ngưỡng " + n2(thr, 1) + ")",
+        color: css("--anchor"), dx: -130, dy: -30
+      }] : [])
+    }, 260) +
+      legend([{ c: css("--series-3"), n: "Tổng vị thế mở" }, { c: css("--series-1"), n: "Vị thế mua ròng của quỹ đầu cơ" }]),
+    note: "Chuỗi dài nhất toàn trang — " + c.n + " tuần từ " + dmy(c.d[0]) + ". <b>Chữ vàng</b> là nội dung chính của mốc CFTC CoT mới nhất."
+  });
+  const w = f.wasde.rows, yrs = [];
+  w.forEach((r, i) => { if (i === 0 || r.my !== w[i - 1].my) yrs.push({ x: ts(r.d), color: css("--rule-panel"), dash: true, label: r.my }); });
+  const bw = DATA.bulletin && (DATA.bulletin.items || []).find(x => x.id === "wasde");
+  const worldSU = bw && bw.figures && bw.figures[0] ? bw.figures[0].value : null;
+  h += panel({
+    span: "s6", title: "WASDE Stocks-to-Use" + chip("phạm vi: MỸ"), unit: "%",
+    cadence: cadence(FREQ.month, myShort(f.wasde.as_of) + " · niên vụ " + w[w.length - 1].my, "wasde"),
+    body: chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: "%", padL: 38, srcKey: "wasde",
+      xTicks: timeTicks(ts(w[0].d), ts(f.wasde.as_of), 6),
+      vlines: yrs,
+      series: [{ name: "Stocks-to-Use (Mỹ)", color: css("--series-1"), w: 1.75, endDot: true, pts: w.map(r => ({ x: ts(r.d), v: r.su, label: myShort(r.d) + " · niên vụ " + r.my, src: r.src })) }],
+      annos: (w.length >= 2 ? [{
+        x: ts(w[w.length - 1].d), v: w[w.length - 1].su,
+        text: "S/U Mỹ " + n2(w[w.length - 2].su, 2) + "%→" + n2(w[w.length - 1].su, 2) + "%|niên vụ " + w[w.length - 1].my,
+        color: css("--anchor"), dx: -130, dy: -28
+      }] : [])
+    }, 260) +
+      xref("<b>Cảnh báo tránh nhầm số:</b> thẻ tin ở " + jump(0, 1, "mục 1") + " nêu <b>S/U thế giới" +
+        (worldSU ? " " + esc(worldSU) + "%" : "") + "</b>, còn biểu đồ này là <b>S/U của Mỹ (" + n2(w[w.length - 1].su, 2) +
+        "%)</b>. Hai con số khác phạm vi địa lý — không đọc thành “S/U vừa giảm từ mức thế giới xuống mức Mỹ”."),
+    note: "Vạch dọc là mốc chuyển niên vụ. Hover mỗi điểm để mở đúng bản báo cáo USDA của tháng đó. " +
+      "Tồn kho dồi dào lên là <b>cung nới</b> — có lợi cho người mua bông; đây là chiều <b>ngược trực giác</b> so với các chỉ tiêu giá. <b>Chữ vàng</b> là nội dung chính của báo cáo WASDE mới nhất."
+  });
+  return h + "</div>";
+}
+
+/* ---- 3.4 Khuyến nghị mua & lịch sự kiện ---- */
+function layerStatus3(thoiDiem, refTs, year) {
+  const m = /(\d{1,2})-(\d{1,2})\/(\d{1,2})/.exec(String(thoiDiem || ""));
+  if (!m) return ["is-armed", "◷", "CHỜ ĐIỀU KIỆN", "neutral"];
+  const mo = +m[3] - 1, start = Date.UTC(year, mo, +m[1]), end = Date.UTC(year, mo, +m[2], 23, 59, 59);
+  if (refTs < start) return ["is-armed", "◷", "CHƯA TỚI", "neutral"];
+  if (refTs <= end) return ["is-open", "●", "ĐANG MỞ", "good"];
+  return ["is-past", "○", "CỬA SỔ ĐÃ ĐÓNG", "neutral"];
+}
+function viewFc4() {
+  const f = DATA.forecast;
+  if (!f) return noData("Dự báo");
+  const rec = f.rec, layers = rec.filter(r => r.nhom === "Phân lớp mua");
+  const refTs3 = ts(refMark()), yr3 = new Date(ts(f.data_as_of)).getUTCFullYear();
+  const ST3 = {};
+  layers.forEach(r => { ST3[r.ten] = layerStatus3(r.thoi_diem, refTs3, yr3); });
+  let h = pageHd("Dự báo & khuyến nghị", "Khuyến nghị mua & lịch sự kiện",
+    "Mua bao nhiêu, khi nào, và mốc nào phải xem lại?");
+  h += confidenceBand();
+  h += "<div>";
+  h += '<div class="rec-rail">' + layers.map((r, i) => {
+    const st = ST3[r.ten] || ["", "", "", ""];
+    return (i ? '<span class="line"></span>' : "") + '<span class="dot ' + (st[0] === "is-open" ? "is-open" : "") + '"></span>';
+  }).join("") + '<span class="line"></span></div>';
+  h += '<div class="recs">' + layers.map(r => {
+    const st = ST3[r.ten] || ["", "○", "", "neutral"];
+    return '<article class="rec-card on-panel ' + st[0] + '"><header class="rc-hd">' +
+      '<span class="rc-step">' + esc(String(r.ten).toUpperCase()) + "</span>" +
+      '<span class="pill ' + st[3] + '"><span>' + st[1] + "</span> " + st[2] + "</span></header>" +
+      '<div class="rc-weight">' + n2(r.min, 0) + "–" + n2(r.max, 0) + '<span class="unit">' + esc(r.don_vi) + "</span></div>" +
+      '<div class="rc-when">' + esc(r.thoi_diem) + "</div>" +
+      '<p class="rc-why">' + esc(r.y_nghia) + "</p>" +
+      (st[0] === "is-past" ? '<p class="rc-note">Hạn cuối ' + esc(r.thoi_diem) + " — cửa sổ này không còn nguyên phía trước.</p>" : "") +
+      '<div class="rc-ft">' + cadence(FREQ.model, dmy(f.data_as_of), "deskRec") + "</div></article>";
+  }).join("") + "</div>";
+
+  const g = DATA.trends && DATA.trends.groups.bong, cot = f.cot;
+  const lastDec = g ? g.ice.dec26.v[g.ice.dec26.v.length - 1] : null;
+  const lastCotlook = g ? g.cotlook.v[g.cotlook.v.length - 1] : null;
+  const anc = f.anchor || {};
+  const hasAnchor = anc.value !== null && anc.value !== undefined;
+  const cotlookRef = hasAnchor ? anc.value : lastCotlook;
+  function statusOf(r, whenMet) {
+    const nm = r.ten, op = r.dieu_kien;
+    let cur = null, lbl = "";
+    if (/Cotlook/i.test(nm)) {
+      if (!g && !hasAnchor) return { na: true };
+      cur = cotlookRef;
+      lbl = hasAnchor ? "Neo hiệu chỉnh " + n2(cur, 2) + " · " + dmy(f.data_as_of)
+                      : "Cotlook (thô) " + n2(cur, 2) + " · " + dmy(g.cotlook.as_of);
+    } else if (/Dec26/i.test(nm)) {
+      if (!g) return { na: true };
+      cur = lastDec; lbl = "ICE Dec26 " + n2(cur, 2) + " · " + dmy(g.ice.dec26.as_of);
+    } else if (/CoT z/i.test(nm)) {
+      cur = cot.z_last; lbl = "điểm z = " + n2(cur, 2) + " · " + dmy(cot.as_of);
+    } else return { na: true };
+    const thr = (op === "≤" || op === "<") ? r.max : r.min;
+    const met = op === "≤" ? cur <= thr : op === "<" ? cur < thr : op === ">" ? cur > thr : false;
+    return { na: false, met: met, cur: lbl, thr: thr };
+  }
+  function thrTable(nhom, title, whenMet, asOfText, extraNote) {
+    const rows = rec.filter(r => r.nhom === nhom);
+    let body = '<div class="table-wrap"><table><thead><tr><th>Chỉ tiêu</th><th>Điều kiện</th><th>Ngưỡng</th>' +
+      "<th>Giá trị hiện tại</th><th>Ý nghĩa</th><th>Trạng thái</th></tr></thead><tbody>";
+    rows.forEach(r => {
+      const st = statusOf(r, whenMet);
+      const thr = (r.dieu_kien === "≤" || r.dieu_kien === "<") ? r.max : r.min;
+      const pill = st.na
+        ? '<span class="pill na"><span>—</span> Không đối chiếu được</span>'
+        : (st.met ? '<span class="pill ' + whenMet + '"><span>✓</span> Đạt ngưỡng</span>'
+                  : '<span class="pill neutral"><span>○</span> Chưa đạt</span>');
+      body += "<tr><td>" + esc(r.ten) + "</td><td>" + esc(r.dieu_kien) + "</td><td>" + n2(thr, 2) + " " + esc(r.don_vi || "") +
+        "</td><td>" + (st.na ? "—" : esc(st.cur)) + '</td><td class="txt">' + esc(r.y_nghia) +
+        (st.na ? " <b>Bàn không tự tính chỉ số này — không có chuỗi số tương ứng trong nguồn.</b>" : "") +
+        (/CoT z/i.test(r.ten) ? " " + jump(2, 2, "Xem thanh ngưỡng tại mục 3.3") + "." : "") +
+        "</td><td>" + pill + "</td></tr>";
+    });
+    body += "</tbody></table></div>";
+    return panel({
+      span: "s12", title: title,
+      cadence: cadence(FREQ.model, asOfText, "deskRec"),
+      body: body,
+      note: (hasAnchor && rows.some(r => /Cotlook/i.test(r.ten))
+        ? '<b>Căn cứ giá hiện hành cho ngưỡng Cotlook:</b> neo hiệu chỉnh <span class="mono">' + n2(anc.value, 2) +
+          "</span> cent/lb (tính trên dữ liệu đến " + dmy(f.data_as_of) + '), KHÔNG dùng quan sát thô <span class="mono">' +
+          n2(anc.raw_observed, 2) + "</span> cent/lb ngày " + dmy(anc.raw_observed_date) +
+          " — đúng nguyên tắc ghi ở khối <b>Nguyên tắc KHÔNG làm</b> bên dưới. Với cả hai số, kết luận ngưỡng không đổi. " +
+          jump(2, 0, "Cơ sở của neo tại mục 3.1") + ". " : "") +
+        "Cùng chữ “Đạt ngưỡng” nhưng màu khác nhau giữa 3 bảng, vì ba bảng mang ý nghĩa ngược nhau — màu mã hoá <b>hệ quả thị trường cho người mua</b>, không mã hoá hành động nên làm. " +
+        (extraNote || "")
+    });
+  }
+  h += '<div class="grid" style="margin-top:18px">';
+  h += thrTable("Ngưỡng mua (kích hoạt Lớp 3)", "Ngưỡng mua — kích hoạt Lớp 3", "good",
+    "ICE " + dmy(g ? g.ice.dec26.as_of : null) + (hasAnchor ? " · neo hiệu chỉnh " + dmy(f.data_as_of) : ""),
+    "Ở bảng này, “Đạt ngưỡng” nghĩa là giá đã về vùng mua tốt.");
+  h += thrTable("Ngưỡng cảnh báo giảm sâu (tạm dừng)", "Ngưỡng cảnh báo giảm sâu — tạm dừng", "bad",
+    "ICE " + dmy(g ? g.ice.dec26.as_of : null) + " · vị thế đầu cơ " + dmy(cot.as_of),
+    "Ở bảng này, “Đạt ngưỡng” nghĩa là điều kiện cảnh báo đã kích hoạt.");
+  h += thrTable("Ngưỡng xác nhận tăng trở lại (đẩy nhanh)", "Ngưỡng xác nhận tăng trở lại — đẩy nhanh", "bad",
+    dmy(f.data_as_of),
+    "Ở bảng này, “Đạt ngưỡng” nghĩa là thị trường xác nhận đi lên → chi phí mua tăng, dù hành động đi kèm là đẩy nhanh mua.");
+  const rules = rec.filter(r => r.nhom === "Nguyên tắc KHÔNG làm");
+  h += '<div class="s12"><div class="rule-card on-panel"><h3>Nguyên tắc không làm</h3>' +
+    rules.map(r => '<div class="r"><span class="g">⊘</span><span><b>' + esc(r.ten) + "</b> — " +
+      (r.min !== null ? "ngưỡng " + n2(r.min, 0) + " " + esc(r.don_vi || "") + ", " : "") +
+      esc(r.thoi_diem) + ". " + esc(r.y_nghia) + "</span></div>").join("") + "</div></div>";
+  h += panel({
+    span: "s12", title: "Lịch sự kiện — " + f.events.length + " mốc" + chip("chỉ sự kiện có ngày + nguồn xác thực"),
+    cadence: cadence(FREQ.model, dmy(f.data_as_of), "events"),
+    body: '<ul class="timeline">' + f.events.map((e, i) =>
+      '<li class="ev-row' + (e.d === f.expiry_date ? " is-refresh" : "") + (STATE.evSel === i ? " is-sel" : "") +
+      '" data-ev="' + i + '" data-jump="1" tabindex="0">' +
+      '<span class="tl-diamond ' + msClass(e.muc_do) + '"></span>' +
+      '<span class="tl-date">' + dmy(e.d) + "</span>" +
+      '<span><span class="tl-name">' + esc(e.ten) + '</span><span class="tl-kind"> · ' + esc(e.loai) + "</span>" +
+      (eventHighlight(e, f) ? '<p class="tl-hl">' + esc(eventHighlight(e, f)) + "</p>" : "") +
+      '<p class="tl-desc">' + esc(e.mo_ta) + "</p></span>" +
+      '<span class="ms-pill ' + msPill(e.muc_do) + '">' + esc(msOf(e.muc_do).label) + "</span>" +
+      '<span class="tl-src">' + srcLink(SRC_BY_DOMAIN[e.nguon] || "events") + "</span></li>").join("") + "</ul>",
+    note: "Marker hình thoi để khớp thị giác với biểu đồ mốc sự kiện ở " + jump(2, 0, "mục 3.1") +
+      " — bấm một mốc ở đây sẽ nhảy sang đó và làm nổi đúng hình thoi. Màu ramp một sắc thể hiện <b>mức ảnh hưởng tới dải dự báo</b>, không thể hiện tin tốt hay tin xấu. <b>Chữ vàng</b> là nội dung chính đã diễn ra tại mốc đó."
+  });
+  return h + "</div></div>";
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   12. SNAPSHOT BAR · MENU · RIBBON (§4.1–4.3)
+   ===================================================================== */
+"use strict";
+/* =====================================================================
+   12. SNAPSHOT BAR - MENU - RIBBON (thay ban tinh: khong doc DB song,
+   doc file data.json dong goi san, sinh lai moi lan chay resume hang tuan)
+   ===================================================================== */
+let BUSY = false, DONE_AT = "";
+
+function snapList() {
+  const ix = DATA.index;
+  const arr = (ix && Array.isArray(ix.snapshots) ? ix.snapshots.slice() : []);
+  arr.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  return arr;
+}
+function runDate() {
+  if (STATE.snap) return STATE.snap;
+  const t = DATA.trends && DATA.trends.generated_at;
+  return t ? String(t).slice(0, 10) : null;
+}
+function renderSnapBar() {
+  const hist = !!STATE.snap, list = snapList();
+  const el = document.getElementById("sbSnap");
+  let h = '<span class="sb-label" title="Ngay chay cap nhat. Ngay cua tung so lieu nam o dong nhip trong moi bieu do va lech nhau tuy nguon.">Cap nhat lan cuoi</span>' +
+    '<span class="sb-date mono">' + dmy(runDate()) + "</span>" +
+    '<button class="sb-pick' + (hist ? " is-history" : "") + '" id="sbPick" aria-haspopup="listbox" aria-expanded="' + STATE.menu + '">' +
+    (hist ? "◷ Ban luu " + dmy(STATE.snap) : "Xem lai thoi diem khac") + ' <span class="chev">▾</span></button>';
+  if (!hist) h += '<button class="sb-refresh" id="sbRefresh" title="Tai lai du lieu tu tep tinh" aria-label="Tai lai du lieu tu tep tinh"' +
+    (BUSY ? ' aria-busy="true"' : "") + '><span class="g">' + (BUSY ? "…" : "⟳") + "</span></button>";
+  if (DONE_AT) h += '<span class="sb-done">Da tai lai <span class="mono">' + esc(DONE_AT) + "</span></span>";
+  if (STATE.menu) {
+    h += '<div class="snapshot-menu on-paper" role="listbox" id="snapMenu"><div class="sm-hd">Cac lan cap nhat da luu</div>';
+    if (!list.length) h += '<div class="sm-empty">Ban tinh nay chi hien thi ban moi nhat - xem lich su chi co o ban Claude Artifact goc.</div>';
+    else list.forEach((s, i) => {
+      const isCur = (STATE.snap === null && i === 0) || STATE.snap === s.date;
+      h += '<button role="option" aria-selected="' + isCur + '" class="sm-row" data-snap="' + esc(s.date) + '">' +
+        '<span class="sm-date">' + (i === 0 ? '<span class="sm-dot"></span>' : "") + dmy(s.date) + "</span>" +
+        '<span class="sm-tag">' + (i === 0 ? "Moi nhat" : "") + (i === 0 && s.label ? " · " : "") + esc(s.label || "") + "</span>" +
+        "<span>" + (isCur ? "✓" : "") + "</span></button>";
+    });
+    h += "</div>";
+  }
+  el.innerHTML = h;
+  const rib = document.getElementById("ribbonSlot");
+  rib.innerHTML = "";
+  syncTopbar();
+}
+function syncTopbar() {
+  const tb = document.getElementById("topbar");
+  if (tb) document.documentElement.style.setProperty("--h-topbar", tb.offsetHeight + "px");
+}
+if (window.ResizeObserver) new ResizeObserver(syncTopbar).observe(document.getElementById("topbar"));
+addEventListener("resize", syncTopbar);
+
+/* =====================================================================
+   13. DIEU HUONG & RENDER
+   ===================================================================== */
+const VIEWS = [
+  [viewBulletin, viewBulletin, viewBulletin],
+  [viewVimo, viewLogistics, viewBong, viewXo, viewTygia, viewLaisuat],
+  [viewFc1, viewFc2, viewFc3, viewFc4]
+];
+function renderNav() {
+  document.getElementById("navList").innerHTML = SECTIONS.map((s, i) =>
+    '<button class="' + (i === STATE.sec ? "is-active" : "") + '" role="tab" aria-selected="' + (i === STATE.sec) +
+    '" data-sec="' + i + '"><span class="n">' + s.n + "</span> " + esc(s.name) + "</button>").join("");
+  document.getElementById("subtabs").innerHTML = SECTIONS[STATE.sec].tabs.map((t, i) =>
+    '<button class="' + (i === STATE.tab ? "is-active" : "") + '" role="tab" aria-selected="' + (i === STATE.tab) +
+    '" data-tab="' + i + '">' + esc(t) + "</button>").join("");
+}
+function sideFoot() {
+  const g = DATA.trends && DATA.trends.groups, f = DATA.forecast;
+  if (!g) return "";
+  return "So lieu toi ngay, theo nhom:" +
+    '<span class="mono">Xo ' + dmy(g.xo.series.px.as_of) + " · Ty gia " + dmy(g.tygia.fx["USD/VND"].as_of) + "</span>" +
+    '<span class="mono">Bong ' + dmy(g.bong.ice_as_of) + (f ? " · Vi the " + dmy(f.cot.as_of) : "") + "</span>" +
+    '<span class="mono">Lai suat ' + dmy(g.laisuat.cb.series[g.laisuat.cb.order[0]].as_of) + "</span>";
+}
+function render() {
+  renderNav(); renderSnapBar();
+  CHARTS.length = 0;
+  document.getElementById("wrap").innerHTML = VIEWS[STATE.sec][STATE.tab]();
+  document.getElementById("navFoot").innerHTML = sideFoot();
+  paintCharts(); syncTopbar();
+  if (STATE.sec === 0) {
+    const b = DATA.bulletin;
+    if (b && b.items[STATE.tab] && STATE.tab > 0) {
+      const el = document.getElementById("news-" + b.items[STATE.tab].id);
+      if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
+    }
+  } else scrollTo(0, 0);
+}
+function go(sec, tab) { STATE.sec = sec; STATE.tab = tab; STATE.menu = false; hideTT(); render(); }
+
+document.addEventListener("click", (e) => {
+  const pick = e.target.closest("#sbPick");
+  if (pick) { STATE.menu = !STATE.menu; renderSnapBar(); return; }
+  if (e.target.closest("#sbRefresh")) { refreshLatest(); return; }
+  if (STATE.menu && !e.target.closest("#snapMenu")) { STATE.menu = false; renderSnapBar(); }
+  const nav = e.target.closest("[data-sec]");
+  if (nav) { go(+nav.dataset.sec, 0); return; }
+  const tb = e.target.closest("[data-tab]");
+  if (tb) { go(STATE.sec, +tb.dataset.tab); return; }
+  const fc = e.target.closest("[data-fc]");
+  if (fc) { STATE.fcAll = fc.dataset.fc === "1"; render(); return; }
+  const ev = e.target.closest("[data-ev]");
+  if (ev) {
+    const i = +ev.dataset.ev;
+    STATE.evSel = (STATE.evSel === i && !ev.dataset.jump) ? -1 : i;
+    if (ev.dataset.jump) go(2, 0); else render();
+    return;
+  }
+  const j = e.target.closest("[data-go]");
+  if (j) { const p = j.dataset.go.split("|"); go(+p[0], +p[1]); }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && STATE.menu) { STATE.menu = false; renderSnapBar(); return; }
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const t = e.target.closest && (e.target.closest("[data-go]") || e.target.closest("[data-ev]"));
+  if (!t) return;
+  e.preventDefault(); t.click();
+});
+
+/* =====================================================================
+   14. NAP DU LIEU TINH (data.json dong goi san, sinh lai boi lenh resume
+   hang tuan cua VP HDQT - khong con doc Claude Artifact Database song)
+   ===================================================================== */
+function fatal(title, body) {
+  document.getElementById("wrap").innerHTML =
+    '<div class="state"><h2>' + esc(title) + "</h2><p>" + body + "</p></div>";
+  document.getElementById("subtabs").innerHTML = "";
+}
+async function loadData() {
+  const res = await fetch("data.json?v=" + Date.now());
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+async function refreshLatest() {
+  if (BUSY) return;
+  BUSY = true; DONE_AT = ""; renderSnapBar();
+  try {
+    const d = await loadData();
+    DATA.trends = d.trends; DATA.forecast = d.forecast; DATA.bulletin = d.bulletin; DATA.index = d.index || null;
+    const now = new Date();
+    DONE_AT = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+    setTimeout(() => { DONE_AT = ""; renderSnapBar(); }, 6000);
+  } catch (e) { console.warn("Tai lai that bai:", e); }
+  BUSY = false; STATE.snap = null; render();
+}
+async function boot() {
+  try {
+    const d = await loadData();
+    DATA.trends = d.trends; DATA.forecast = d.forecast; DATA.bulletin = d.bulletin; DATA.index = d.index || null;
+  } catch (e) {
+    fatal("Loi khi tai du lieu", '<span class="mono">' + esc(e && e.message ? e.message : e) +
+      "</span><br>Thu tai lai trang. Neu lap lai, kiem tra file data.json cung thu muc.");
+    renderSnapBar(); return;
+  }
+  if (!DATA.trends && !DATA.forecast && !DATA.bulletin) {
+    fatal("Chua co du lieu", "Tep data.json chua co noi dung cho trang nay.");
+    renderSnapBar(); return;
+  }
+  render();
+}
+boot();
+</script>
+
+</body></html>

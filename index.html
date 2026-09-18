@@ -362,6 +362,7 @@ table.narrow thead th,table.narrow tbody td{padding:8px 7px;font-size:12px}
 .sm{display:grid;gap:12px}
 .sm-5{grid-template-columns:repeat(5,1fr)}
 .sm-4{grid-template-columns:repeat(4,1fr)}
+.sm-2{grid-template-columns:repeat(2,1fr)}
 .sm-cell{display:flex;flex-direction:column;gap:4px;min-width:0}
 .sm-cell h4{font-size:12px;font-weight:600;color:var(--ink-1)}
 .sm-cell .cadence{margin:0 0 4px}
@@ -370,6 +371,14 @@ table.narrow thead th,table.narrow tbody td{padding:8px 7px;font-size:12px}
   border-radius:3px;padding:3px 9px}
 .toggle button.is-active{background:var(--accent-wash);color:var(--ink-1);border-color:var(--accent)}
 .hd-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+
+/* ---------- tiêu đề PHẦN bên trong 1 sub-tab (2.5 Sợi) ---------- */
+.part-hd{grid-column:span 12;margin:12px 0 -2px}
+.part-hd .k{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--accent-paper)}
+.part-hd h2{font-family:var(--font-display);font-size:20px;line-height:1.25;
+  color:var(--ink1-paper);margin-top:2px}
+.part-hd p{font-size:12.5px;line-height:1.55;color:var(--ink3-paper);max-width:84ch;margin-top:4px}
 
 /* ---------- tooltip (§4.16) ---------- */
 #tt{position:fixed;z-index:90;pointer-events:none;background:var(--panel-inset);
@@ -519,7 +528,10 @@ const SOURCES = {
   deskEst:  { name: "Ước tính của bàn — dữ liệu gốc: Cotlook Ltd, ICE Futures U.S.", url: null },
   deskMeas: { name: "Đo lường nội bộ trên chuỗi Cotlook Ltd", url: null },
   deskRec:  { name: "Khuyến nghị của bàn — không phải khuyến nghị đầu tư của bên thứ ba", url: null },
-  cotZ:     { name: "CFTC (chuỗi gốc) · điểm z: Ước tính của bàn", url: "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" }
+  cotZ:     { name: "CFTC (chuỗi gốc) · điểm z: Ước tính của bàn", url: "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" },
+  ccf:      { name: "CCFGroup", url: "https://www.ccfgroup.com/" },
+  banSoi:   { name: "Số liệu kỹ thuật Ban Sợi (tổng hợp từ các đơn vị thành viên)", url: null },
+  soiDesk:  { name: "Ước tính của bàn — dữ liệu gốc: CCFGroup, Cotlook Ltd, số liệu kỹ thuật Ban Sợi", url: null }
 };
 /* ánh xạ tên miền trong lịch sự kiện -> khoá SOURCES (không hiện tên miền thô) */
 const SRC_BY_DOMAIN = {
@@ -557,6 +569,7 @@ const DIR = {
   cot:      { up: ["bad", "vị thế mua dày thêm"], down: ["good", "vị thế mua mỏng đi"] },
   demand:   { up: ["good", "cầu tăng"], down: ["bad", "cầu giảm"] },
   activity: { up: ["good", "tiêu thụ tăng"], down: ["bad", "tiêu thụ giảm"] },
+  margin:   { up: ["good", "biên nới ra"], down: ["bad", "biên co lại"] },
   neutral:  { up: ["neutral", ""], down: ["neutral", ""] }
 };
 /** delta có 3 kênh độc lập: glyph = chiều số học · màu = hệ quả · chữ = giải thích */
@@ -1147,10 +1160,10 @@ function figSparkline(vals, lastLabel, delta, weeks) {
    ===================================================================== */
 const SECTIONS = [
   { n: "01", name: "Bản tin USDA", tabs: ["CFTC CoT", "WASDE Cotton", "Cotton: World Markets and Trade"] },
-  { n: "02", name: "Diễn biến thị trường", tabs: ["Vĩ mô", "Dầu & Logistics", "Bông", "Xơ", "Tỷ giá", "Lãi suất"] },
+  { n: "02", name: "Diễn biến thị trường", tabs: ["Vĩ mô", "Dầu & Logistics", "Bông", "Xơ", "Sợi", "Tỷ giá", "Lãi suất"] },
   { n: "03", name: "Dự báo & khuyến nghị", tabs: ["Hiện trạng & dải dự báo", "Cơ sở & độ tin cậy", "Vị thế & cung–cầu", "Khuyến nghị mua & lịch sự kiện"] }
 ];
-const DATA = { trends: null, forecast: null, bulletin: null, index: null };
+const DATA = { trends: null, forecast: null, bulletin: null, soi: null, index: null };
 const STATE = { sec: 0, tab: 0, snap: null, menu: false, fcAll: false, evSel: -1 };
 
 /* =====================================================================
@@ -1455,6 +1468,439 @@ function viewXo() {
     }, 220) + (trDty ? legend([{ c: css("--ink3-panel"), n: "Xu hướng (hồi quy tuyến tính, nét đứt)" }]) : ""),
     note: "Đơn vị <span class=\"mono\">Yuan/MT</span> khác ba biểu đồ trên nên để biểu đồ riêng — không dùng hai trục y."
   }), true);
+  return h + "</div>";
+}
+
+/* =====================================================================
+   10b. SUB-TAB 2.5 — SỢI (thêm 18/09/2026)
+   4 phần theo thiết kế đã duyệt: 1 Biên kéo sợi · 2 Cung–cầu Trung Quốc ·
+   3 Tồn kho & vận hành · 4 Vị thế Việt Nam.
+   Dữ liệu nằm ở DOCUMENT RIÊNG `{coll}/soi` — cố ý KHÔNG nhét vào trends.groups
+   vì trần 256 KiB/document của Artifact Database.
+   ĐƠN VỊ: đọc TRỰC TIẾP trường `unit` của từng chuỗi trong document (giống `S.brent_ice.unit`
+   ở sub-tab Xơ) — KHÔNG khai lại bảng đơn vị cứng trong trang. Đơn vị đã được xác nhận trực
+   tiếp trên nguồn ngày 18/09/2026; nếu sau này nguồn đổi đơn vị, sửa ở consolidator là trang
+   tự đúng theo, không phải sửa hai nơi.
+   ===================================================================== */
+function viewSoi() {
+  const s = DATA.soi;
+  if (!s) return noData("Sợi");
+  const P1 = s.phan1_bien_keo_soi || {}, C = P1.cotton || {}, G = P1.gia_soi || {},
+    PE = P1.pe_reference || {}, M = P1.method || {},
+    P3 = s.phan3_tonkho_vanhanh || {}, TK = P3.tonkho || {}, VH = P3.vanhanh || {},
+    R2 = s.phan2_cungcau_tq || [];
+
+  /* ---- tiện ích cục bộ ---- */
+  function step(nn, lbl, inner, last) {
+    return '<div class="chain"><div class="chain-step"><span class="n">' + nn + '</span><span class="lbl">' + lbl + "</span>" +
+      (last ? "" : '<span class="chev">▾</span>') + "</div><div>" + inner + "</div></div>";
+  }
+  function partHd(k, title, desc) {
+    return '<div class="part-hd"><span class="k">' + esc(k) + "</span><h2>" + esc(title) + "</h2>" +
+      (desc ? "<p>" + desc + "</p>" : "") + "</div>";
+  }
+  const has = (o) => !!(o && o.v && o.v.length);
+  /** đơn vị của 1 chuỗi — luôn lấy từ document, không có thì để trống (không tự đặt tên đơn vị) */
+  const U = (o) => (o && o.unit) ? o.unit : "";
+  /** đơn vị chung của 1 nhóm chuỗi vẽ trên CÙNG một trục: các chuỗi phải cùng đơn vị, nếu
+   *  nguồn đổi khiến chúng lệch nhau thì hiện đủ các đơn vị khác nhau thay vì chọn bừa một cái */
+  const uAll = (list) => {
+    const u = [];
+    (list || []).forEach(o => { const x = U(o); if (x && u.indexOf(x) < 0) u.push(x); });
+    return u.join(" · ");
+  };
+  const isMonth = (k) => /^\d{4}-\d{2}$/.test(String(k));
+  const kyTick = (k) => String(k).slice(5) + "/" + String(k).slice(2, 4);
+  const kyFull = (k) => String(k).slice(5) + "/" + String(k).slice(0, 4);
+  /** chênh lệch so mốc cách `days` ngày lịch gần nhất trong chính chuỗi (null nếu chưa đủ dài) */
+  function dlt(o, days) {
+    if (!has(o)) return null;
+    const n = o.v.length, lastT = ts(o.d[n - 1]);
+    for (let i = n - 1; i >= 0; i--) if (lastT - ts(o.d[i]) >= days * 86400000) return o.v[n - 1] - o.v[i];
+    return null;
+  }
+  /** nén chuỗi đã forward-fill theo ngày về đúng các BẬC thật (giá trị đổi) — cùng cách
+   *  AWP ở mục 2.3 được dựng; nếu không nén, chart bậc thang vẽ 1 chấm/ngày, đọc không ra. */
+  function stepsOf(o) {
+    const d = [], v = [], n = o.d.length;
+    for (let i = 0; i < n; i++) if (i === 0 || o.v[i] !== o.v[i - 1]) { d.push(o.d[i]); v.push(o.v[i]); }
+    if (d[d.length - 1] !== o.d[n - 1]) { d.push(o.d[n - 1]); v.push(o.v[n - 1]); }
+    return { d: d, v: v, as_of: o.as_of, label: o.label };
+  }
+  function monthly(ct, pl) {
+    return R2.filter(r => r.chi_tieu === ct && r.phan_loai === pl && isMonth(r.ky))
+      .sort((a, b) => a.ky < b.ky ? -1 : 1);
+  }
+  function byCountry(ct) {
+    const all = R2.filter(r => r.chi_tieu === ct && !isMonth(r.ky) && r.phan_loai !== "Tổng");
+    return {
+      ky: all.length ? all[0].ky : null,
+      total: all.find(r => r.phan_loai === "Total") || null,
+      rows: all.filter(r => r.phan_loai !== "Total").sort((a, b) => (b.khoi_luong || 0) - (a.khoi_luong || 0))
+    };
+  }
+  /** thanh ngang tự vẽ (cùng lối SVG nội tuyến với figPairbars/figBignum §4.7) */
+  function figHBars(items, aria) {
+    if (!items.length) return panelMissing("Chưa có dữ liệu phân rã theo quốc gia.");
+    const max = Math.max.apply(null, items.map(it => it.v || 0)) || 1;
+    const W = 640, labW = 150, valW = 96, rowH = 23, H = items.length * rowH + 6, barW = W - labW - valW;
+    let g = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(aria || "") +
+      '" style="display:block;width:100%;height:auto">';
+    items.forEach((it, i) => {
+      const y = i * rowH + 3, w = Math.max(2, barW * ((it.v || 0) / max));
+      g += '<text x="0" y="' + (y + 12) + '" fill="' + (it.hl ? css("--ink1-panel") : css("--ink2-panel")) +
+        '" font-family="' + css("--font-ui") + '" font-size="11.5"' + (it.hl ? ' font-weight="600"' : "") + ">" +
+        esc(it.label) + "</text>";
+      g += '<rect x="' + labW + '" y="' + y + '" width="' + barW + '" height="15" fill="' + css("--panel-inset") + '"/>';
+      g += '<rect x="' + labW + '" y="' + y + '" width="' + w.toFixed(1) + '" height="15" rx="2" fill="' +
+        (it.hl ? css("--series-2") : css("--series-1")) + '"/>';
+      g += '<text x="' + W + '" y="' + (y + 12) + '" text-anchor="end" fill="' +
+        (it.hl ? css("--ink1-panel") : css("--ink2-panel")) + '" font-family="' + css("--font-mono") +
+        '" font-size="11.5">' + nInt(it.v) + "</text>";
+    });
+    return g + "</svg>";
+  }
+  function lineChart(series, cfg, h) {
+    return chartBox(Object.assign({ kind: "line", xkind: "time", series: series }, cfg), h || 240);
+  }
+
+  /* ---- đầu trang + ghi chú phạm vi dữ liệu ----
+     `data_gap_warning` của document nay chỉ còn là CÔNG BỐ PHẠM VI (2/7 nhóm chi-số, chưa có
+     nhóm XNK hải quan VN) — không còn điểm nào đáng báo động, nên hiển thị bằng dòng ghi chú
+     nhỏ trung tính `.frame-label`, KHÔNG dùng thẻ cảnh báo. Vẫn phải hiện, không được bỏ. */
+  let h = pageHd("Diễn biến thị trường · Sợi", "Sợi — biên kéo sợi & cung–cầu",
+    "Kéo 1 kg sợi từ bông hôm nay còn lại bao nhiêu, và thị trường sợi lớn nhất thế giới đang dư hay thiếu?",
+    "<b>Khung hiển thị: 12 tháng gần nhất</b> cho các chuỗi theo ngày/tuần; riêng sản lượng Trung Quốc giữ nguyên chuỗi tháng dài từ 01/2023. " +
+    "Bố cục: phần 1 đọc theo chuỗi giá trị (bông → sợi) như " + jump(1, 3, "sub-tab 2.4 Xơ") +
+    "; ba phần còn lại là các bảng đối chiếu song song như " + jump(1, 2, "sub-tab 2.3 Bông") + ".");
+  if (s.data_gap_warning) {
+    h += '<p class="frame-label" style="margin:-8px 0 16px"><b>Phạm vi dữ liệu:</b> ' +
+      esc(s.data_gap_warning) + " Giá sợi Trung Quốc niêm yết bằng đơn vị khác nhóm còn lại nên " +
+      "được vẽ trên biểu đồ riêng, trang không quy đổi sang cùng đơn vị.</p>";
+  }
+
+  /* =================== PHẦN 1 — BIÊN KÉO SỢI =================== */
+  h += partHd("Phần 1", "Biên kéo sợi (bông → sợi cotton 32s chải thô)",
+    "Ba đường trên cùng một biểu đồ, <b>không gộp</b>: hai đường tự tính của bàn và một đường chuẩn đối chiếu của CCFGroup. " +
+    "Giữ cả ba để thấy ngay khi cách tính của bàn lệch khỏi chuẩn bên ngoài — đúng cách trang này xử lý cặp Brent kép ở " +
+    jump(1, 1, "mục 2.2") + ".");
+  h += "<div>";
+
+  /* 01 — tham số phương pháp */
+  const th = M.tieu_hao_cd, cg = M.cp_gia_cong;
+  let mBody = "";
+  if (has(th) || has(cg)) {
+    mBody += '<div class="tiles tiles-3">' +
+      '<div class="tile"><span class="tile-label">Hệ số tiêu hao bông CD</span><span class="tile-value">' +
+      (has(th) ? n2(th.v[th.v.length - 1], 4) : "—") + '<span class="tile-unit">' + esc(U(th)) + '</span></span>' +
+      '<span class="tile-note">' + (has(th) ? dmy(th.as_of) : "chưa có") + "</span></div>" +
+      '<div class="tile"><span class="tile-label">Chi phí gia công sợi</span><span class="tile-value">' +
+      (has(cg) ? n2(cg.v[cg.v.length - 1], 4) : "—") + '<span class="tile-unit">' + esc(U(cg)) + '</span></span>' +
+      '<span class="tile-note">' + (has(cg) ? dmy(cg.as_of) : "chưa có") + "</span></div>" +
+      "</div>";
+    mBody += '<div class="sm sm-2" style="margin-top:14px">' +
+      '<div class="sm-cell"><h4>Hệ số tiêu hao bông CD ' + unitTag(U(th)) + "</h4>" +
+      (has(th) ? chartBox({
+        kind: "line", xkind: "time", yDec: 3, yUnit: U(th), padL: 50,
+        xTicks: timeTicks(ts(th.d[0]), ts(th.as_of), 4),
+        series: [{ name: "Hệ số tiêu hao bông CD", color: css("--series-4"), w: 2, step: true, pts: pts(stepsOf(th)) }]
+      }, 190) : panelMissing("Chưa có dữ liệu.")) + "</div>" +
+      '<div class="sm-cell"><h4>Chi phí gia công sợi ' + unitTag(U(cg)) + "</h4>" +
+      (has(cg) ? chartBox({
+        kind: "line", xkind: "time", yDec: 3, yUnit: U(cg), padL: 50,
+        xTicks: timeTicks(ts(cg.d[0]), ts(cg.as_of), 4),
+        series: [{ name: "Chi phí gia công sợi", color: css("--series-6"), w: 2, step: true, pts: pts(stepsOf(cg)) }]
+      }, 190) : panelMissing("Chưa có dữ liệu.")) + "</div></div>";
+  } else mBody = panelMissing("Chưa có tham số phương pháp cho kỳ này.");
+  h += step("01", "Tham số", panel({
+    span: "", title: "Hai tham số quyết định biên" + chip("số kỹ thuật nội bộ · bình quân gia quyền theo sản lượng"),
+    cadence: cadence(FREQ.month, has(th) ? dmy(th.as_of) : "—", "banSoi"),
+    body: mBody,
+    note: "Hai tham số này chỉ đổi <b>theo tháng</b> nên vẽ dạng bậc thang — mỗi bậc giữ nguyên tới lần cập nhật kế tiếp, " +
+      "đúng như cách " + jump(1, 2, "AWP ở mục 2.3") + " được vẽ. Hệ số tiêu hao và chi phí gia công là bình quân gia quyền " +
+      "theo sản lượng sản xuất của các đơn vị kéo sợi, không phải giả định chung của ngành."
+  }));
+
+  /* 02 — biên kéo sợi (3 đường) */
+  const bg = C.bien_gop, br = C.bien_rong, bc = C.bien_ccf;
+  let bBody = "", bNote = "";
+  if (has(bg) || has(br) || has(bc)) {
+    const ser = [];
+    if (has(bg)) ser.push({ name: (bg.label || "Biên gộp"), ticker: "Gộp", color: css("--series-1"), w: 1.75, pts: pts(bg), endDot: true });
+    if (has(br)) ser.push({ name: (br.label || "Biên ròng"), ticker: "Ròng", color: css("--series-3"), w: 2.5, pts: pts(br), endDot: true });
+    if (has(bc)) ser.push({ name: (bc.label || "Biên CCFGroup"), ticker: "CCF", color: css("--series-2"), w: 1.75, pts: pts(bc), endDot: true });
+    const last = has(bc) ? bc : (has(br) ? br : bg);
+    bBody = '<div class="tiles tiles-3">' +
+      ["bien_gop", "bien_rong", "bien_ccf"].map(k => {
+        const o = C[k], nm = k === "bien_gop" ? "Biên gộp (tự tính)" : k === "bien_rong" ? "Biên ròng (tự tính)" : "Biên CCFGroup (đối chiếu)";
+        if (!has(o)) return '<div class="tile"><span class="tile-label">' + esc(nm) +
+          '</span><span class="tile-value is-empty">—</span><span class="tile-note">chưa có dữ liệu</span></div>';
+        return '<div class="tile"><span class="tile-label">' + esc(nm) + '</span><span class="tile-value">' +
+          n2(o.v[o.v.length - 1], 3) + '<span class="tile-unit">USD/kg</span></span>' +
+          deltaHtml(dlt(o, 30), 3, "USD/kg so ~30 ngày trước", "margin", 0.0005) +
+          '<span class="tile-note">' + dmy(o.as_of) + "</span></div>";
+      }).join("") + "</div>";
+    bBody += chartBox({
+      kind: "line", xkind: "time", yDec: 2, yUnit: uAll([bg, br, bc]), ttDec: 3, endLabels: true, padR: 62, padL: 50,
+      xTicks: timeTicks(ts(last.d[0]), ts(last.as_of), 7),
+      series: ser
+    }, 330);
+    bBody += legend([
+      { c: css("--series-1"), tk: "Gộp", n: "biên gộp — tự tính, chưa trừ chi phí gia công" },
+      { c: css("--series-3"), tk: "Ròng", n: "biên ròng — tự tính, đã trừ chi phí gia công" },
+      { c: css("--series-2"), tk: "CCF", n: "biên lợi nhuận sợi 32s Việt Nam (air-jet) — chuẩn đối chiếu bên ngoài" }
+    ]);
+    bNote = "<b>Cách tính, ghi rõ để kiểm chứng lại được:</b> biên gộp = giá sợi cotton 32s Việt Nam − " +
+      "(giá bông Cotlook A Index × hệ số tiêu hao bông CD); biên ròng = biên gộp − chi phí gia công sợi. " +
+      "Đường CCFGroup <b>không</b> dùng công thức của bàn (nhà cung cấp không công bố công thức) nên chỉ đóng vai " +
+      "<b>chuẩn đối chiếu độc lập</b> — hai đường tự tính bám sát được đường này là dấu hiệu chuỗi tham số vào đúng, " +
+      "không phải là bằng chứng công thức giống nhau. Ba đường <b>không gộp, không lấy trung bình</b>. " +
+      "Biên nới ra là <b>có lợi</b> cho khâu kéo sợi, nên tô màu theo chiều đó." +
+      (has(bg) && has(bc) && bg.as_of !== bc.as_of
+        ? " Hai đường tự tính dừng ở <span class=\"mono\">" + dmy(bg.as_of) +
+          "</span> vì tham số kỹ thuật mới cập nhật tới đó, trong khi đường CCFGroup đã tới <span class=\"mono\">" +
+          dmy(bc.as_of) + "</span> — đoạn cuối biểu đồ chỉ còn 1 đường là đúng, không phải mất dữ liệu."
+        : "");
+  } else bBody = panelMissing("Chưa có chuỗi biên kéo sợi cho kỳ này.");
+  h += step("02", "Biên", panel({
+    span: "", title: "Biên kéo sợi — 3 đường song song", unit: uAll([bg, br, bc]),
+    cadence: cadence(FREQ.session,
+      (has(bg) ? dmy(bg.as_of) + " (tự tính)" : "—") + (has(bc) ? " · " + dmy(bc.as_of) + " (CCFGroup)" : ""),
+      "soiDesk"),
+    body: bBody, note: bNote
+  }));
+
+  /* 03 — tham chiếu PE (chỉ Trung Quốc) */
+  const peChip = chip("CHỈ Trung Quốc — không phải Việt Nam");
+  let peInner = "";
+  if (has(PE.price_32s) || has(PE.price_cvc)) {
+    const sp = [];
+    if (has(PE.price_32s)) sp.push({ name: PE.price_32s.label, ticker: "PE 32s", color: css("--series-1"), w: 1.75, pts: pts(PE.price_32s), endDot: true });
+    if (has(PE.price_cvc)) sp.push({ name: PE.price_cvc.label, ticker: "CVC", color: css("--series-5"), w: 1.75, pts: pts(PE.price_cvc), endDot: true });
+    const ref = has(PE.price_32s) ? PE.price_32s : PE.price_cvc;
+    peInner += panel({
+      span: "", title: "Giá sợi PE 32s &amp; CVC 60/40 Trung Quốc" + peChip, unit: uAll([PE.price_32s, PE.price_cvc]),
+      cadence: cadence(FREQ.session, dmy(ref.as_of), "ccf"),
+      body: chartBox({
+        kind: "line", xkind: "time", yDec: 0, yUnit: uAll([PE.price_32s, PE.price_cvc]), endLabels: true, padR: 70, padL: 56,
+        xTicks: timeTicks(ts(ref.d[0]), ts(ref.as_of), 7), series: sp
+      }, 240) + legend([
+        { c: css("--series-1"), tk: "PE 32s", n: "sợi PE 32s Trung Quốc" },
+        { c: css("--series-5"), tk: "CVC", n: "sợi pha CVC 60/40 32s Trung Quốc" }
+      ]),
+      note: "Đơn vị <span class=\"mono\">" + esc(uAll([PE.price_32s, PE.price_cvc])) + "</span> — khác hẳn nhóm giá " +
+        "<span class=\"mono\">" + esc(uAll([G.vn_32s])) + "</span> ở phần 4, nên để biểu đồ riêng, <b>không</b> quy đổi."
+    });
+  }
+  if (has(PE.spread) || has(PE.profit)) {
+    const sp2 = [];
+    if (has(PE.spread)) sp2.push({ name: PE.spread.label, ticker: "Spread", color: css("--series-4"), w: 1.75, pts: pts(PE.spread), endDot: true });
+    if (has(PE.profit)) sp2.push({ name: PE.profit.label, ticker: "Lợi nhuận", color: css("--series-2"), w: 2, pts: pts(PE.profit), endDot: true });
+    const ref2 = has(PE.spread) ? PE.spread : PE.profit;
+    peInner += panel({
+      span: "", title: "Chênh lệch gia công &amp; biên lợi nhuận sợi PE Trung Quốc" + peChip, unit: uAll([PE.spread, PE.profit]),
+      cadence: cadence(FREQ.session, dmy(ref2.as_of), "ccf"),
+      body: chartBox({
+        kind: "line", xkind: "time", yDec: 0, yUnit: uAll([PE.spread, PE.profit]), endLabels: true, padR: 78, padL: 56,
+        xTicks: timeTicks(ts(ref2.d[0]), ts(ref2.as_of), 7), series: sp2
+      }, 240) + legend([
+        { c: css("--series-4"), tk: "Spread", n: "chênh lệch giá gia công sợi PE" },
+        { c: css("--series-2"), tk: "Lợi nhuận", n: "biên lợi nhuận sợi PE 32s" }
+      ]),
+      note: "<b>Đây là số liệu Trung Quốc, dùng làm bối cảnh cạnh tranh — trang này KHÔNG có biên kéo sợi PE của " +
+        "Việt Nam/Vinatex và cũng không tự dựng một con số như vậy.</b> Biên kéo sợi tự tính ở bước 02 chỉ áp cho " +
+        "tuyến bông → sợi cotton. Cặp đường này để trung tính về màu: giá gia công PE rẻ đi vừa là áp lực cạnh tranh, " +
+        "vừa là cơ hội đầu vào tuỳ vai trò của đơn vị đọc."
+    });
+  }
+  if (!peInner) peInner = panel({ span: "", title: "Tham chiếu sợi PE Trung Quốc" + peChip, body: panelMissing("Chưa có dữ liệu.") });
+  h += step("03", "Tham chiếu PE", '<div style="display:grid;gap:16px">' + peInner + "</div>", true);
+  h += "</div>";
+
+  /* =================== PHẦN 2 — CUNG–CẦU TRUNG QUỐC =================== */
+  h += '<div class="grid">';
+  h += partHd("Phần 2", "Cung–cầu sợi cotton Trung Quốc (theo tháng)",
+    "Thị trường tiêu thụ và cạnh tranh lớn nhất của sợi Việt Nam. Vai trò của phần này giống vai trò của " +
+    jump(0, 1, "bản tin WASDE") + " với bông: khung cung–cầu để đọc giá, không phải giá.");
+
+  const CT_SX = "Sản lượng sợi cotton (Trung Quốc)";
+  const CT_NK = "Nhập khẩu sợi cotton (Trung Quốc)";
+  const CT_NK_CS = R2.map(r => r.chi_tieu).find(x => x.indexOf("chỉ 2/7 nhóm chi-số") >= 0) || "";
+  const sx = monthly(CT_SX, "Tổng");
+  h += panel({
+    span: "s12", title: "Sản lượng sợi cotton Trung Quốc theo tháng",
+    unit: sx.length ? sx[0].don_vi : "—",
+    cadence: cadence(FREQ.month, sx.length ? kyFull(sx[sx.length - 1].ky) : "—", "ccf"),
+    body: sx.length ? chartBox({
+      kind: "line", xkind: "band", yDec: 0, yUnit: sx[0].don_vi, ttDec: 0, padL: 50,
+      xTicks: sx.map((r, i) => ({ x: i, label: kyTick(r.ky) })).filter((_, i) => i % 3 === 0),
+      series: [{
+        name: "Sản lượng sợi cotton (Trung Quốc)", color: css("--series-1"), w: 1.75, endDot: true,
+        pts: sx.map((r, i) => ({ x: i, v: r.khoi_luong, label: kyFull(r.ky) }))
+      }]
+    }, 260) : panelMissing("Chưa có dữ liệu sản lượng."),
+    note: "Đơn vị lấy nguyên văn từ nguồn: <span class=\"mono\">" + esc(sx.length ? sx[0].don_vi : "—") +
+      "</span>. Chuỗi để trung tính về màu: sản lượng Trung Quốc tăng vừa là cung sợi dồi dào hơn (ép giá bán) " +
+      "vừa là cầu bông mạnh hơn — hai hệ quả ngược chiều nhau với một tập đoàn vừa mua bông vừa bán sợi."
+  });
+
+  const nkT = monthly(CT_NK, "Tổng"), nkC = CT_NK_CS ? monthly(CT_NK_CS, "Tổng") : [];
+  const axis = nkT.length ? nkT : nkC;
+  let nkSer = [];
+  if (nkT.length) nkSer.push({
+    name: CT_NK, ticker: "Tổng", color: css("--series-1"), w: 2, endDot: true,
+    pts: axis.map((r, i) => { const m = nkT.find(q => q.ky === r.ky); return { x: i, v: m ? m.khoi_luong : null, label: kyFull(r.ky) }; })
+  });
+  if (nkC.length) nkSer.push({
+    name: CT_NK_CS, ticker: "2/7 chi-số", color: css("--series-4"), w: 1.75, endDot: true,
+    pts: axis.map((r, i) => { const m = nkC.find(q => q.ky === r.ky); return { x: i, v: m ? m.khoi_luong : null, label: kyFull(r.ky) }; })
+  });
+  h += panel({
+    span: "s12", title: "Nhập khẩu sợi cotton của Trung Quốc theo tháng", unit: axis.length ? axis[0].don_vi : "",
+    cadence: cadence(FREQ.month, axis.length ? kyFull(axis[axis.length - 1].ky) : "—", "ccf"),
+    body: axis.length ? chartBox({
+      kind: "line", xkind: "band", yDec: 0, yUnit: axis[0].don_vi, ttDec: 0, padL: 62,
+      xTicks: axis.map((r, i) => ({ x: i, label: kyTick(r.ky) })),
+      series: nkSer
+    }, 260) + legend([
+      { c: css("--series-1"), tk: "Tổng", n: "tổng nhập khẩu sợi cotton" },
+      { c: css("--series-4"), tk: "2/7 chi-số", n: "phần đã bóc tách được theo chi số sợi" }
+    ]) : panelMissing("Chưa có dữ liệu nhập khẩu theo tháng."),
+    note: "<b>Giới hạn phạm vi của đường thứ hai, nguyên văn từ bộ dữ liệu:</b> <span class=\"scope-chip\">" +
+      esc(CT_NK_CS || "—") + "</span> — tức đường này <b>không</b> phải toàn bộ cơ cấu chi số, mới bóc tách được " +
+      "2 trong 7 nhóm, nên khoảng cách giữa hai đường <b>không</b> đọc được thành \"các chi số còn lại\". " +
+      "Chuỗi chỉ mới có từ 01/2026."
+  });
+
+  [[CT_NK, "Nhập khẩu — theo nước xuất xứ", "Việt Nam đứng ở đâu trong nguồn cung sợi cho Trung Quốc"],
+   ["Xuất khẩu sợi cotton (Trung Quốc)", "Xuất khẩu — theo nước đến", "Sợi Trung Quốc đang cạnh tranh với sợi Việt Nam ở những thị trường nào"]
+  ].forEach(cfg => {
+    const d = byCountry(cfg[0]);
+    const items = d.rows.slice(0, 12).map(r => ({
+      label: r.phan_loai === "Vietnam" ? "Việt Nam" : r.phan_loai,
+      v: r.khoi_luong, hl: r.phan_loai === "Vietnam"
+    }));
+    const vn = d.rows.find(r => r.phan_loai === "Vietnam");
+    const vnRank = vn ? d.rows.indexOf(vn) + 1 : null;
+    const tot = d.total && d.total.khoi_luong;
+    const dvi = (d.total && d.total.don_vi) || (d.rows[0] && d.rows[0].don_vi) || "";
+    h += panel({
+      span: "s6", title: esc(cfg[1]) + chip("luỹ kế"), unit: dvi,
+      cadence: cadence(FREQ.month, d.ky ? String(d.ky) : "—", "ccf"),
+      body: figHBars(items, cfg[1]) +
+        (tot ? '<p class="chart-note"><b>Tổng cộng tất cả các nước:</b> <span class="mono">' + nInt(tot) +
+          "</span> " + esc(dvi) + (d.total.gia_tri_usd ? ' · <span class="mono">' + nInt(d.total.gia_tri_usd) + "</span> USD" : "") +
+          (vn ? " · Việt Nam <span class=\"mono\">" + nInt(vn.khoi_luong) + "</span> " + esc(dvi) + " (" +
+            n2(vn.khoi_luong / tot * 100, 1) + "% tổng, hạng " + vnRank + ")" : "") + "</p>" : ""),
+      note: esc(cfg[2]) + ". Biểu đồ hiện <b>12 nước lớn nhất</b> trong " + d.rows.length +
+        " nước có số liệu; thanh tô đậm là Việt Nam. Kỳ số liệu ghi nguyên văn từ nguồn: <span class=\"mono\">" +
+        esc(String(d.ky || "—")) + "</span> — đây là số <b>luỹ kế</b>, không phải một tháng, nên không đặt cạnh " +
+        "hai biểu đồ theo tháng ở trên để so sánh trực tiếp."
+    });
+  });
+
+  /* =================== PHẦN 3 — TỒN KHO & VẬN HÀNH =================== */
+  h += partHd("Phần 3", "Tồn kho & vận hành (theo tuần)",
+    "Chỉ báo sớm nhất của áp lực giá sợi: hàng đang nằm ở đâu và nhà máy đang chạy bao nhiêu phần công suất.");
+
+  const tkDay = [["spinning", "--series-1"], ["fabric", "--series-3"], ["pe_spinning", "--series-5"]]
+    .filter(k => has(TK[k[0]]));
+  h += panel({
+    span: "s12", title: "Tồn kho sợi tại nhà máy — kéo sợi · dệt · sợi PE", unit: uAll(tkDay.map(k => TK[k[0]])),
+    cadence: cadence(FREQ.week, tkDay.length ? dmy(TK[tkDay[0][0]].as_of) : "—", "ccf"),
+    body: tkDay.length ? chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: U(TK[tkDay[0][0]]), ttDec: 1, endLabels: true, padR: 66, padL: 44,
+      xTicks: timeTicks(ts(TK[tkDay[0][0]].d[0]), ts(TK[tkDay[0][0]].as_of), 7),
+      series: tkDay.map(k => ({
+        name: TK[k[0]].label, ticker: k[0] === "spinning" ? "Kéo sợi" : k[0] === "fabric" ? "Dệt" : "PE",
+        color: css(k[1]), w: 1.75, pts: pts(TK[k[0]]), endDot: true
+      }))
+    }, 280) + legend(tkDay.map(k => ({ c: css(k[1]), n: TK[k[0]].label }))) : panelMissing("Chưa có dữ liệu tồn kho."),
+    note: "Ba chuỗi cùng đơn vị <span class=\"mono\">" + esc(uAll(tkDay.map(k => TK[k[0]]))) + "</span> nên dùng <b>một trục duy nhất</b>. " +
+      "Nhóm này để <b>trung tính về màu</b>: tồn kho sợi tại Trung Quốc dày lên là áp lực giảm giá sợi (xấu cho đơn vị bán sợi) " +
+      "nhưng cũng là dấu hiệu nguồn cung sẵn (tốt cho đơn vị mua sợi) — tô xanh/đỏ ở đây là nói sai bằng màu."
+  });
+
+  const pt = TK.port;
+  h += panel({
+    span: "s12", title: "Tồn kho sợi cotton nhập khẩu tại cảng Trung Quốc" + chip("đơn vị khác 3 chuỗi trên"),
+    unit: U(pt),
+    cadence: cadence(FREQ.week, has(pt) ? dmy(pt.as_of) : "—", "ccf"),
+    body: has(pt) ? chartBox({
+      kind: "line", xkind: "time", yDec: 1, yUnit: U(pt), ttDec: 2, padL: 44,
+      xTicks: timeTicks(ts(pt.d[0]), ts(pt.as_of), 7),
+      series: [{ name: pt.label, color: css("--series-2"), w: 1.75, pts: pts(pt), endDot: true }]
+    }, 220) : panelMissing("Chưa có dữ liệu tồn kho cảng."),
+    note: "Chuỗi này đo <b>khối lượng</b> (" + esc(U(pt)) + "), ba chuỗi ở biểu đồ trên đo <b>số ngày tồn</b> — " +
+      "hai thước đo khác nhau nên tách hẳn biểu đồ, không dùng hai trục y và không vẽ chung."
+  });
+
+  const vhK = [["vn", "--series-1", "Việt Nam"], ["cn_cotton", "--series-2", "TQ · cotton"], ["cn_pe", "--series-5", "TQ · PE"]]
+    .filter(k => has(VH[k[0]]));
+  h += panel({
+    span: "s12", title: "Tỷ lệ vận hành nhà máy kéo sợi — Việt Nam &amp; Trung Quốc", unit: uAll(vhK.map(k => VH[k[0]])),
+    cadence: cadence(FREQ.week, vhK.length ? dmy(VH[vhK[0][0]].as_of) : "—", "ccf"),
+    body: vhK.length ? chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: U(VH[vhK[0][0]]), ttDec: 1, endLabels: true, padR: 72, padL: 40,
+      xTicks: timeTicks(ts(VH[vhK[0][0]].d[0]), ts(VH[vhK[0][0]].as_of), 7),
+      series: vhK.map(k => ({ name: VH[k[0]].label, ticker: k[2], color: css(k[1]), w: k[0] === "vn" ? 2.5 : 1.75, pts: pts(VH[k[0]]), endDot: true }))
+    }, 280) + legend(vhK.map(k => ({ c: css(k[1]), tk: k[2], n: VH[k[0]].label }))) : panelMissing("Chưa có dữ liệu vận hành."),
+    note: "Đường Việt Nam vẽ dày hơn vì là chuỗi tham chiếu của người đọc trang này, không phá bảng màu. " +
+      "Ba chuỗi cùng đơn vị <span class=\"mono\">" + esc(uAll(vhK.map(k => VH[k[0]]))) + "</span> nên chung một trục."
+  });
+
+  /* =================== PHẦN 4 — VỊ THẾ VIỆT NAM =================== */
+  h += partHd("Phần 4", "Vị thế Việt Nam — giá sợi so với các nguồn cung cạnh tranh",
+    "Sợi Việt Nam đang đắt hay rẻ hơn sợi cùng loại của các nước xuất khẩu khác.");
+
+  const usdK = [["vn_32s", "--series-1", "Việt Nam"], ["in_32s", "--series-3", "Ấn Độ"],
+    ["pk_10s", "--series-4", "Pakistan"], ["uz_32s", "--series-6", "Uzbekistan"]].filter(k => has(G[k[0]]));
+  const vnS = G.vn_32s;
+  h += panel({
+    span: "s12", title: "Giá sợi cotton — Việt Nam so với Ấn Độ · Pakistan · Uzbekistan", unit: uAll(usdK.map(k => G[k[0]])),
+    cadence: cadence(FREQ.session, usdK.length ? dmy(G[usdK[0][0]].as_of) : "—", "ccf"),
+    body: usdK.length ? chartBox({
+      kind: "line", xkind: "time", yDec: 2, yUnit: U(G[usdK[0][0]]), ttDec: 2, endLabels: true, padR: 78, padL: 46,
+      xTicks: timeTicks(ts(G[usdK[0][0]].d[0]), ts(G[usdK[0][0]].as_of), 7),
+      series: usdK.map(k => ({
+        name: G[k[0]].label, ticker: k[2], color: css(k[1]),
+        w: k[0] === "vn_32s" ? 2.5 : 1.75, pts: pts(G[k[0]]), endDot: true
+      }))
+    }, 300) + legend(usdK.map(k => ({ c: css(k[1]), tk: k[2], n: G[k[0]].label })) ) : panelMissing("Chưa có dữ liệu giá sợi."),
+    note: "Bốn chuỗi cùng đơn vị <span class=\"mono\">" + esc(uAll(usdK.map(k => G[k[0]]))) + "</span> nên chung một trục. " +
+      "<b>Lưu ý khi so sánh:</b> chuỗi Pakistan là sợi <b>siro-spun 10s</b>, ba chuỗi còn lại là <b>32s</b> — khác chi số " +
+      "thì khác mặt hàng, chênh lệch mức giá giữa Pakistan và nhóm 32s <b>không</b> đọc được thành lợi thế/bất lợi cạnh tranh. " +
+      "Nhóm này để trung tính về màu: giá sợi cao có lợi cho đơn vị bán sợi nhưng bất lợi cho đơn vị mua sợi đi dệt. " +
+      "Giá bông đầu vào của cùng khung thời gian nằm ở " + jump(1, 2, "sub-tab 2.3 Bông") + "."
+  });
+
+  const cn = G.cn_32s;
+  h += panel({
+    span: "s12", title: "Giá sợi cotton 32s Trung Quốc (nội địa)" + chip("đơn vị khác — KHÔNG quy đổi"),
+    unit: U(cn),
+    cadence: cadence(FREQ.session, has(cn) ? dmy(cn.as_of) : "—", "ccf"),
+    body: has(cn) ? chartBox({
+      kind: "line", xkind: "time", yDec: 0, yUnit: U(cn), ttDec: 0, padL: 58,
+      xTicks: timeTicks(ts(cn.d[0]), ts(cn.as_of), 7),
+      series: [{ name: cn.label, color: css("--series-2"), w: 1.75, pts: pts(cn), endDot: true }]
+    }, 240) : panelMissing("Chưa có dữ liệu giá sợi Trung Quốc."),
+    note: "<b>Vì sao tách khỏi biểu đồ trên:</b> đơn vị của chuỗi này là <span class=\"mono\">" + esc(U(cn)) +
+      "</span>, khác hẳn <span class=\"mono\">" + esc(uAll(usdK.map(k => G[k[0]]))) + "</span> của bốn chuỗi kia. " +
+      "Muốn đặt chung một trục thì phải quy đổi qua tỷ giá CNY/USD và hệ số khối lượng — trang này " +
+      "<b>không tự chọn tỷ giá quy đổi</b>, vì con số quy đổi khi đó là số do trang tự đặt ra chứ không phải số quan sát được. " +
+      "Đọc chuỗi này theo <b>chiều biến động</b> để cảm nhận mặt bằng giá sợi nội địa Trung Quốc, hoặc so bằng " +
+      "mức chênh lệch tương đối giữa hai mốc thời gian, thay vì đặt hai mức tuyệt đối cạnh nhau."
+  });
+
+  /* Ghi chú gốc của doc (`phan4_vi_the_vn.note`) là ghi chú KỸ THUẬT cho người dựng dữ liệu —
+     chứa tên trường JSON — nên KHÔNG in nguyên văn ra trang. Nội dung thực chất của nó
+     (chỉ so sánh chéo giá; thiếu hẳn nhóm XNK hải quan Việt Nam) được viết lại bằng ngôn ngữ
+     người đọc dưới đây; không được bỏ vế "chưa có dữ liệu hải quan VN". */
+  h += '<div class="s12">' + xref("<b>Phạm vi phần 4 dừng ở đây.</b> Vị thế Việt Nam trong tab này chỉ được đo bằng " +
+    "<b>so sánh chéo mức giá</b> giữa sợi Việt Nam và các nguồn cung cạnh tranh. Trang <b>không</b> hiển thị số liệu " +
+    "xuất nhập khẩu hải quan Việt Nam — nhóm dữ liệu đó chưa có nguồn nào được duyệt cho mục này, và chỗ trống " +
+    "được để lộ ra có chủ đích, không lấp bằng số suy đoán.") + "</div>";
+
   return h + "</div>";
 }
 
@@ -1949,12 +2395,8 @@ function viewFc4() {
 /* =====================================================================
    12. SNAPSHOT BAR · MENU · RIBBON (§4.1–4.3)
    ===================================================================== */
-"use strict";
-/* =====================================================================
-   12. SNAPSHOT BAR - MENU - RIBBON (thay ban tinh: khong doc DB song,
-   doc file data.json dong goi san, sinh lai moi lan chay resume hang tuan)
-   ===================================================================== */
-let BUSY = false, DONE_AT = "";
+const COLL = "bong-xo-vphdqt";
+let DB = null, BUSY = false, DONE_AT = "";
 
 function snapList() {
   const ix = DATA.index;
@@ -1970,28 +2412,33 @@ function runDate() {
 function renderSnapBar() {
   const hist = !!STATE.snap, list = snapList();
   const el = document.getElementById("sbSnap");
-  let h = '<span class="sb-label" title="Ngay chay cap nhat. Ngay cua tung so lieu nam o dong nhip trong moi bieu do va lech nhau tuy nguon.">Cap nhat lan cuoi</span>' +
+  let h = '<span class="sb-label" title="Ngày chạy cập nhật. Ngày của từng số liệu nằm ở dòng nhịp trong mỗi biểu đồ và lệch nhau tuỳ nguồn.">Cập nhật lần cuối</span>' +
     '<span class="sb-date mono">' + dmy(runDate()) + "</span>" +
     '<button class="sb-pick' + (hist ? " is-history" : "") + '" id="sbPick" aria-haspopup="listbox" aria-expanded="' + STATE.menu + '">' +
-    (hist ? "◷ Ban luu " + dmy(STATE.snap) : "Xem lai thoi diem khac") + ' <span class="chev">▾</span></button>';
-  if (!hist) h += '<button class="sb-refresh" id="sbRefresh" title="Tai lai du lieu tu tep tinh" aria-label="Tai lai du lieu tu tep tinh"' +
+    (hist ? "◷ Bản lưu " + dmy(STATE.snap) : "Xem lại thời điểm khác") + ' <span class="chev">▾</span></button>';
+  if (!hist) h += '<button class="sb-refresh" id="sbRefresh" title="Tải lại dữ liệu mới nhất" aria-label="Tải lại dữ liệu mới nhất"' +
     (BUSY ? ' aria-busy="true"' : "") + '><span class="g">' + (BUSY ? "…" : "⟳") + "</span></button>";
-  if (DONE_AT) h += '<span class="sb-done">Da tai lai <span class="mono">' + esc(DONE_AT) + "</span></span>";
+  if (DONE_AT) h += '<span class="sb-done">Đã tải lại · <span class="mono">' + esc(DONE_AT) + "</span></span>";
   if (STATE.menu) {
-    h += '<div class="snapshot-menu on-paper" role="listbox" id="snapMenu"><div class="sm-hd">Cac lan cap nhat da luu</div>';
-    if (!list.length) h += '<div class="sm-empty">Ban tinh nay chi hien thi ban moi nhat - xem lich su chi co o ban Claude Artifact goc.</div>';
+    h += '<div class="snapshot-menu on-paper" role="listbox" id="snapMenu"><div class="sm-hd">Các lần cập nhật đã lưu</div>';
+    if (!list.length) h += '<div class="sm-empty">Chưa có bản lưu nào trước đó.</div>';
     else list.forEach((s, i) => {
       const isCur = (STATE.snap === null && i === 0) || STATE.snap === s.date;
       h += '<button role="option" aria-selected="' + isCur + '" class="sm-row" data-snap="' + esc(s.date) + '">' +
         '<span class="sm-date">' + (i === 0 ? '<span class="sm-dot"></span>' : "") + dmy(s.date) + "</span>" +
-        '<span class="sm-tag">' + (i === 0 ? "Moi nhat" : "") + (i === 0 && s.label ? " · " : "") + esc(s.label || "") + "</span>" +
+        '<span class="sm-tag">' + (i === 0 ? "Mới nhất" : "") + (i === 0 && s.label ? " · " : "") + esc(s.label || "") + "</span>" +
         "<span>" + (isCur ? "✓" : "") + "</span></button>";
     });
     h += "</div>";
   }
   el.innerHTML = h;
   const rib = document.getElementById("ribbonSlot");
-  rib.innerHTML = "";
+  rib.innerHTML = hist
+    ? '<div class="history-ribbon on-panel" role="status"><span class="hr-glyph">◷</span>' +
+      '<p>Đang xem bản lưu ngày <span class="mono">' + dmy(STATE.snap) +
+      "</span> — dữ liệu và khuyến nghị dưới đây là trạng thái tại thời điểm đó.</p>" +
+      '<button class="hr-back" id="hrBack">Quay lại bản mới nhất</button></div>'
+    : "";
   syncTopbar();
 }
 function syncTopbar() {
@@ -2002,11 +2449,13 @@ if (window.ResizeObserver) new ResizeObserver(syncTopbar).observe(document.getEl
 addEventListener("resize", syncTopbar);
 
 /* =====================================================================
-   13. DIEU HUONG & RENDER
+   13. ĐIỀU HƯỚNG & RENDER
    ===================================================================== */
 const VIEWS = [
   [viewBulletin, viewBulletin, viewBulletin],
-  [viewVimo, viewLogistics, viewBong, viewXo, viewTygia, viewLaisuat],
+  /* thứ tự PHẢI khớp SECTIONS[1].tabs — Sợi đứng ngay sau Xơ (index 4), Tỷ giá/Lãi suất lùi xuống 5/6.
+     Mọi jump(1, N)/go(1, N) trong file phải dùng index MỚI này. */
+  [viewVimo, viewLogistics, viewBong, viewXo, viewSoi, viewTygia, viewLaisuat],
   [viewFc1, viewFc2, viewFc3, viewFc4]
 ];
 function renderNav() {
@@ -2020,10 +2469,13 @@ function renderNav() {
 function sideFoot() {
   const g = DATA.trends && DATA.trends.groups, f = DATA.forecast;
   if (!g) return "";
-  return "So lieu toi ngay, theo nhom:" +
-    '<span class="mono">Xo ' + dmy(g.xo.series.px.as_of) + " · Ty gia " + dmy(g.tygia.fx["USD/VND"].as_of) + "</span>" +
-    '<span class="mono">Bong ' + dmy(g.bong.ice_as_of) + (f ? " · Vi the " + dmy(f.cot.as_of) : "") + "</span>" +
-    '<span class="mono">Lai suat ' + dmy(g.laisuat.cb.series[g.laisuat.cb.order[0]].as_of) + "</span>";
+  return "Số liệu tới ngày, theo nhóm:" +
+    '<span class="mono">Xơ ' + dmy(g.xo.series.px.as_of) + " · Tỷ giá " + dmy(g.tygia.fx["USD/VND"].as_of) + "</span>" +
+    '<span class="mono">Bông ' + dmy(g.bong.ice_as_of) + (f ? " · Vị thế " + dmy(f.cot.as_of) : "") + "</span>" +
+    '<span class="mono">Lãi suất ' + dmy(g.laisuat.cb.series[g.laisuat.cb.order[0]].as_of) + "</span>" +
+    (DATA.soi && DATA.soi.phan1_bien_keo_soi && DATA.soi.phan1_bien_keo_soi.gia_soi &&
+      DATA.soi.phan1_bien_keo_soi.gia_soi.vn_32s
+      ? '<span class="mono">Sợi ' + dmy(DATA.soi.phan1_bien_keo_soi.gia_soi.vn_32s.as_of) + "</span>" : "");
 }
 function render() {
   renderNav(); renderSnapBar();
@@ -2071,8 +2523,8 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* =====================================================================
-   14. NAP DU LIEU TINH (data.json dong goi san, sinh lai boi lenh resume
-   hang tuan cua VP HDQT - khong con doc Claude Artifact Database song)
+   14. NẠP DỮ LIỆU TĨNH (data.json đóng gói sẵn, sinh lại bởi lệnh resume
+   hàng tuần của VP HĐQT - không còn đọc Claude Artifact Database sống)
    ===================================================================== */
 function fatal(title, body) {
   document.getElementById("wrap").innerHTML =
@@ -2089,24 +2541,26 @@ async function refreshLatest() {
   BUSY = true; DONE_AT = ""; renderSnapBar();
   try {
     const d = await loadData();
-    DATA.trends = d.trends; DATA.forecast = d.forecast; DATA.bulletin = d.bulletin; DATA.index = d.index || null;
+    DATA.trends = d.trends; DATA.forecast = d.forecast; DATA.bulletin = d.bulletin; DATA.soi = d.soi || null;
+    DATA.index = d.index || null;
     const now = new Date();
     DONE_AT = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
     setTimeout(() => { DONE_AT = ""; renderSnapBar(); }, 6000);
-  } catch (e) { console.warn("Tai lai that bai:", e); }
+  } catch (e) { console.warn("Tải lại thất bại:", e); }
   BUSY = false; STATE.snap = null; render();
 }
 async function boot() {
   try {
     const d = await loadData();
-    DATA.trends = d.trends; DATA.forecast = d.forecast; DATA.bulletin = d.bulletin; DATA.index = d.index || null;
+    DATA.trends = d.trends; DATA.forecast = d.forecast; DATA.bulletin = d.bulletin; DATA.soi = d.soi || null;
+    DATA.index = d.index || null;
   } catch (e) {
-    fatal("Loi khi tai du lieu", '<span class="mono">' + esc(e && e.message ? e.message : e) +
-      "</span><br>Thu tai lai trang. Neu lap lai, kiem tra file data.json cung thu muc.");
+    fatal("Lỗi khi tải dữ liệu", '<span class="mono">' + esc(e && e.message ? e.message : e) +
+      "</span><br>Thử tải lại trang. Nếu lặp lại, kiểm tra file data.json cùng thư mục.");
     renderSnapBar(); return;
   }
-  if (!DATA.trends && !DATA.forecast && !DATA.bulletin) {
-    fatal("Chua co du lieu", "Tep data.json chua co noi dung cho trang nay.");
+  if (!DATA.trends && !DATA.forecast && !DATA.bulletin && !DATA.soi) {
+    fatal("Chưa có dữ liệu", "Tệp data.json chưa có nội dung cho trang này.");
     renderSnapBar(); return;
   }
   render();

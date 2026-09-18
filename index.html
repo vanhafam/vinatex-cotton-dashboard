@@ -661,6 +661,33 @@ function chartColors() {
     pan2: css("--panel-2"), hair: css("--hair-panel"), acc: css("--accent-panel")
   };
 }
+/** Hồi quy tuyến tính OLS (bình phương tối thiểu) trên {x,v} — trả {x0,x1,a,b} (v = a + b·x)
+ *  hoặc null nếu dưới 2 điểm hợp lệ. x là timestamp/số thứ tự, không chuẩn hoá — an toàn với
+ *  timestamp lớn vì chỉ dùng cho phép cộng/trừ/nhân tuyến tính, không luỹ thừa cao. */
+function linRegLine(ptsArr) {
+  const p = (ptsArr || []).filter(q => q.v !== null && q.v !== undefined);
+  if (p.length < 2) return null;
+  const n = p.length;
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  p.forEach(q => { sx += q.x; sy += q.v; sxx += q.x * q.x; sxy += q.x * q.v; });
+  const denom = n * sxx - sx * sx;
+  if (denom === 0) return null; // mọi x trùng nhau — không xác định được độ dốc
+  const b = (n * sxy - sx * sy) / denom;
+  const a = (sy - b * sx) / n;
+  return { x0: p[0].x, x1: p[p.length - 1].x, a: a, b: b };
+}
+/** Series "đường xu hướng" nét đứt, màu trung tính (không mã hoá hệ quả/chiều có lợi — đây là
+ *  mô tả thống kê thuần, không phải quan sát hay dự báo). Chỉ 2 điểm đầu–cuối vì là đường thẳng.
+ *  `noEndLabel` để drawChart() không gắn nhãn ticker cuối đường cho chuỗi này khi cfg.endLabels. */
+function trendSeries(label, ptsArr, w) {
+  const r = linRegLine(ptsArr);
+  if (!r) return null;
+  return {
+    name: label + " · xu hướng (hồi quy tuyến tính, nét đứt)", color: css("--ink3-panel"),
+    w: w || 1.5, dash: true, noEndLabel: true,
+    pts: [{ x: r.x0, v: r.a + r.b * r.x0 }, { x: r.x1, v: r.a + r.b * r.x1 }]
+  };
+}
 function drawChart(el, cfg, h) {
   const W = Math.max(el.clientWidth || 320, 200);
   const padL = cfg.padL || 46, padR = cfg.padR || (cfg.endLabels ? 62 : 14),
@@ -753,7 +780,7 @@ function drawChart(el, cfg, h) {
       const lastP = sr.pts.filter(p => p.v !== null).pop();
       if (sr.endDot && lastP) s += '<circle cx="' + X(lastP.x).toFixed(1) + '" cy="' + Y(lastP.v).toFixed(1) +
         '" r="4.5" fill="' + sr.color + '" stroke="' + C.pan + '" stroke-width="1.5"/>';
-      if (cfg.endLabels && lastP) {
+      if (cfg.endLabels && lastP && !sr.noEndLabel) {
         const tx = X(lastP.x) + 8, ty = Y(lastP.v) + 4;
         const lbl = sr.ticker || sr.name;
         s += '<rect x="' + (tx - 2).toFixed(1) + '" y="' + (ty - 11).toFixed(1) + '" width="' + (lbl.length * 6.9 + 5).toFixed(1) +
@@ -1312,6 +1339,8 @@ function viewBong() {
     const s = g.ice[c[0]];
     return { name: "ICE " + s.name, ticker: s.ticker, color: css(c[1]), w: c[2], pts: pts(s), endDot: true };
   });
+  const trDec26 = trendSeries("ICE " + g.ice.dec26.name, pts(g.ice.dec26));
+  if (trDec26) ser.unshift(trDec26);
   ser.push({ name: "Cotlook A Index — CFR Far East", ticker: "Cotlook", color: css("--series-2"), w: 1.75, pts: pts(g.cotlook), endDot: true });
   const oct = g.ice.oct26;
   const lastOct = oct.d.length ? { x: ts(oct.d[oct.d.length - 1]), v: oct.v[oct.v.length - 1] } : null;
@@ -1329,21 +1358,24 @@ function viewBong() {
       annos: lastOct ? [{ x: lastOct.x, v: lastOct.v, text: "Oct26 — ngày thông báo giao hàng đầu tiên 24/09/2026|sau mốc này chuỗi ngừng có ý nghĩa tham chiếu", dx: -150, dy: -20 }] : []
     }, 320) +
       legend(ICE.map(c => ({ c: css(c[1]), tk: g.ice[c[0]].ticker, n: g.ice[c[0]].name }))
-        .concat([{ c: css("--series-2"), tk: "Cotlook", n: "A Index — CFR Far East" }])),
-    note: "Ramp 1 sắc 4 bậc cho họ kỳ hạn ICE: bậc tối nhất là Oct26 (hợp đồng sắp hết vòng đời, tự lùi về hậu cảnh), bậc sáng nhất là May27. <b>Dec26</b> — hợp đồng tham chiếu của mọi ngưỡng mua ở mục 3.4 — được nhấn bằng nét dày 2,5px, không phá ramp màu. Giá bông tăng là <b>tăng chi phí</b> đầu vào."
+        .concat([{ c: css("--series-2"), tk: "Cotlook", n: "A Index — CFR Far East" }])
+        .concat(trDec26 ? [{ c: css("--ink3-panel"), n: "Xu hướng Dec26 (hồi quy tuyến tính, nét đứt)" }] : [])),
+    note: "Ramp 1 sắc 4 bậc cho họ kỳ hạn ICE: bậc tối nhất là Oct26 (hợp đồng sắp hết vòng đời, tự lùi về hậu cảnh), bậc sáng nhất là May27. <b>Dec26</b> — hợp đồng tham chiếu của mọi ngưỡng mua ở mục 3.4 — được nhấn bằng nét dày 2,5px, không phá ramp màu. Giá bông tăng là <b>tăng chi phí</b> đầu vào. Đường xám nét đứt là <b>xu hướng hồi quy tuyến tính của Dec26</b> trên đúng khung 12 tháng hiển thị — mô tả thống kê thuần trên dữ liệu quan sát, không phải dự báo (dự báo nằm ở " + jump(2, 0, "mục 3") + ")."
   });
   const awp = g.awp;
+  const awpPts = awp.steps_d.map((d, i) => ({ x: ts(d), v: awp.steps_v[i], label: "Hiệu lực từ " + dmy(d) }));
+  const trAwp = trendSeries("AWP", awpPts, 1.25);
   h += panel({
     title: "Adjusted World Price (AWP)" + chip("bậc thang · công bố theo tuần"), unit: "cent/lb",
     cadence: cadence(FREQ.week, dmy(awp.as_of), "fsa"),
     body: chartBox({
       kind: "line", xkind: "time", yDec: 0, yUnit: "cent/lb",
       xTicks: timeTicks(ts(awp.steps_d[0]), ts(awp.as_of), 5),
-      series: [{
+      series: (trAwp ? [trAwp] : []).concat([{
         name: "Adjusted World Price", color: css("--series-1"), w: 2, step: true,
-        pts: awp.steps_d.map((d, i) => ({ x: ts(d), v: awp.steps_v[i], label: "Hiệu lực từ " + dmy(d) }))
-      }]
-    }, 220),
+        pts: awpPts
+      }])
+    }, 220) + (trAwp ? legend([{ c: css("--ink3-panel"), n: "Xu hướng (hồi quy tuyến tính, nét đứt)" }]) : ""),
     note: "USDA công bố theo tuần và giữ nguyên mức trong suốt tuần hiệu lực — biểu đồ vẽ dạng bậc thang đúng theo cách công bố, mỗi bậc kéo từ ngày hiệu lực tới ngày hiệu lực kế tiếp. Chuỗi bắt đầu từ " +
       dmy(awp.first_date) + "."
   });
@@ -1367,54 +1399,60 @@ function viewXo() {
     return '<div class="chain"><div class="chain-step"><span class="n">' + nn + '</span><span class="lbl">' + lbl + "</span>" +
       (last ? "" : '<span class="chev">▾</span>') + "</div><div>" + inner + "</div></div>";
   }
+  const trBrent = trendSeries("Brent", pts(S.brent_ice));
   h += step("01", "Đầu chuỗi", panel({
     span: "", title: "Brent — giá thanh toán hợp đồng tương lai (ICE)" + chip(S.brent_ice.method), unit: S.brent_ice.unit,
     cadence: cadence(FREQ.session, dmy(S.brent_ice.as_of), "ice"),
     body: chartBox({
       kind: "line", xkind: "time", yDec: 0, yUnit: "USD/thùng",
       xTicks: timeTicks(ts(S.brent_ice.d[0]), ts(S.brent_ice.as_of), 7),
-      series: [{ name: "Brent — hợp đồng tương lai (ICE)", color: css("--series-1"), pts: pts(S.brent_ice), w: 1.75, endDot: true }]
+      series: (trBrent ? [trBrent] : []).concat([{ name: "Brent — hợp đồng tương lai (ICE)", color: css("--series-1"), pts: pts(S.brent_ice), w: 1.75, endDot: true }])
     }, 220) +
-      legend([{ c: css("--series-1"), n: "Brent — hợp đồng tương lai · đường liền, dot ở điểm cuối = chuỗi theo phiên liên tục" }]) +
+      legend([{ c: css("--series-1"), n: "Brent — hợp đồng tương lai · đường liền, dot ở điểm cuối = chuỗi theo phiên liên tục" }]
+        .concat(trBrent ? [{ c: css("--ink3-panel"), n: "Xu hướng (hồi quy tuyến tính, nét đứt)" }] : [])) +
       xref("Đây <b>không phải</b> chuỗi Brent ở " + jump(1, 1, "mục 2.2 Dầu &amp; Logistics") +
         '. Mục 2.2 dùng <i>Brent — spot theo tuần (EIA)</i>, dừng ở tháng 8/2026. Hai chuỗi lệch tới <span class="mono">+16,4%</span> tại tháng 4/2026 — hiển thị song song có chủ đích, không chọn một chuỗi và không lấy trung bình.')
   }));
+  const trPx = trendSeries("PX", pts(S.px));
   h += step("02", "Giữa chuỗi", panel({
     span: "", title: "Paraxylene (PX) · PTA · MEG", unit: "USD/MT",
     cadence: cadence(FREQ.session, dmy(S.px.as_of), "emerging"),
     body: chartBox({
       kind: "line", xkind: "time", yDec: 0, yUnit: "USD/MT", endLabels: true, padR: 62,
       xTicks: timeTicks(ts(S.px.d[0]), ts(S.px.as_of), 7),
-      series: [
+      series: (trPx ? [trPx] : []).concat([
         { name: "Paraxylene (PX), FOB Korea", ticker: "PX", color: css("--series-1"), pts: pts(S.px), endDot: true },
         { name: "PTA nhập khẩu, CIF China", ticker: "PTA", color: css("--series-2"), pts: pts(S.pta), endDot: true },
         { name: "MEG nhập khẩu, CIF China", ticker: "MEG", color: css("--series-3"), pts: pts(S.meg), endDot: true }
-      ]
+      ])
     }, 260) +
       legend([{ c: css("--series-1"), tk: "PX", n: "Paraxylene, FOB Korea" },
         { c: css("--series-2"), tk: "PTA", n: "nhập khẩu, CIF China" },
-        { c: css("--series-3"), tk: "MEG", n: "nhập khẩu, CIF China" }]),
-    note: "Ba chuỗi cùng đơn vị USD/MT nên dùng <b>một trục duy nhất</b>."
+        { c: css("--series-3"), tk: "MEG", n: "nhập khẩu, CIF China" }]
+        .concat(trPx ? [{ c: css("--ink3-panel"), n: "Xu hướng PX (hồi quy tuyến tính, nét đứt)" }] : [])),
+    note: "Ba chuỗi cùng đơn vị USD/MT nên dùng <b>một trục duy nhất</b>. Chỉ vẽ xu hướng cho PX — chuỗi đầu vào thượng nguồn của cả PTA lẫn MEG — để tránh 3 đường trend chồng nhau."
   }));
+  const trPsf = trendSeries("PSF", pts(S.psf));
   h += step("03", "Sản phẩm — PSF", panel({
     span: "", title: "PSF Trung Quốc (direct-spun) 1.4D×38mm" + chip("giá theo phiên, từ " + dmy(S.psf.cut_from)), unit: S.psf.unit,
     cadence: cadence(FREQ.session, dmy(S.psf.as_of), "emerging"),
     body: chartBox({
       kind: "line", xkind: "time", yDec: 2, yUnit: "USD/kg",
       xTicks: timeTicks(ts(S.psf.d[0]), ts(S.psf.as_of), 7),
-      series: [{ name: "PSF Trung Quốc (direct-spun)", color: css("--series-1"), pts: pts(S.psf), w: 1.75, endDot: true }]
-    }, 220),
+      series: (trPsf ? [trPsf] : []).concat([{ name: "PSF Trung Quốc (direct-spun)", color: css("--series-1"), pts: pts(S.psf), w: 1.75, endDot: true }])
+    }, 220) + (trPsf ? legend([{ c: css("--ink3-panel"), n: "Xu hướng (hồi quy tuyến tính, nét đứt)" }]) : ""),
     note: "Biểu đồ chỉ vẽ chuỗi giá theo phiên từ 09/2025. Giai đoạn 01–08/2025 (" + S.psf.excluded_n +
       " điểm) là chỉ báo <b>trung bình tháng</b> — cùng mặt hàng, cùng quy cách, nhưng khác phương pháp đo, cố ý không nối vào đường này."
   }));
+  const trDty = trendSeries("DTY", pts(S.dty));
   h += step("04", "Sản phẩm — DTY", panel({
     span: "", title: "DTY Trung Quốc (Qianqing) 150D/48F", unit: S.dty.unit,
     cadence: cadence(FREQ.session, dmy(S.dty.as_of), "emerging"),
     body: chartBox({
       kind: "line", xkind: "time", yDec: 0, yUnit: "Yuan/MT",
       xTicks: timeTicks(ts(S.dty.d[0]), ts(S.dty.as_of), 7),
-      series: [{ name: "DTY Trung Quốc (Qianqing) 150D/48F", color: css("--series-5"), pts: pts(S.dty), w: 1.75, endDot: true }]
-    }, 220),
+      series: (trDty ? [trDty] : []).concat([{ name: "DTY Trung Quốc (Qianqing) 150D/48F", color: css("--series-5"), pts: pts(S.dty), w: 1.75, endDot: true }])
+    }, 220) + (trDty ? legend([{ c: css("--ink3-panel"), n: "Xu hướng (hồi quy tuyến tính, nét đứt)" }]) : ""),
     note: "Đơn vị <span class=\"mono\">Yuan/MT</span> khác ba biểu đồ trên nên để biểu đồ riêng — không dùng hai trục y."
   }), true);
   return h + "</div>";
@@ -1428,6 +1466,8 @@ function viewTygia() {
     "Tỷ giá đang cộng hay trừ vào giá vốn nhập khẩu và doanh thu xuất khẩu?",
     "<b>Khung hiển thị: 12 tháng gần nhất.</b> Nhóm này để <b>trung tính về màu</b>: doanh nghiệp vừa nhập nguyên liệu bằng USD vừa thu USD từ xuất khẩu — tô xanh/đỏ ở đây là nói sai bằng màu.");
   h += '<div class="grid">';
+  const uAvgPts = u.d.map((d, i) => ({ x: ts(d), v: u.avg[i], label: dmy(d) }));
+  const trUsd = trendSeries("USD/VND Bình quân", uAvgPts);
   h += panel({
     title: "USD/VND" + chip("đường chính = bình quân · dải = biên mua chuyển khoản–bán"), unit: "VND",
     cadence: cadence(FREQ.week, dmy(u.as_of), "vcb"),
@@ -1435,32 +1475,35 @@ function viewTygia() {
       kind: "line", xkind: "time", yDec: 0, yUnit: "VND", ttDec: 0, padL: 56,
       xTicks: timeTicks(ts(u.d[0]), ts(u.as_of), 7),
       areas: [{ fill: "rgba(74,143,224,.13)", lo: u.d.map((d, i) => ({ x: ts(d), v: u.buy[i] })), hi: u.d.map((d, i) => ({ x: ts(d), v: u.sell[i] })) }],
-      series: [
-        { name: "Bình quân", color: css("--series-1"), w: 2.5, pts: u.d.map((d, i) => ({ x: ts(d), v: u.avg[i], label: dmy(d) })), marker: "dot", endDot: true },
+      series: (trUsd ? [trUsd] : []).concat([
+        { name: "Bình quân", color: css("--series-1"), w: 2.5, pts: uAvgPts, marker: "dot", endDot: true },
         { name: "Mua chuyển khoản", color: "rgba(74,143,224,.5)", w: 1, pts: u.d.map((d, i) => ({ x: ts(d), v: u.buy[i], label: dmy(d) })) },
         { name: "Bán", color: "rgba(74,143,224,.5)", w: 1, pts: u.d.map((d, i) => ({ x: ts(d), v: u.sell[i], label: dmy(d) })) }
-      ]
+      ])
     }, 320) +
       legend([{ c: css("--series-1"), n: "Bình quân (đường chính)" },
-        { c: "rgba(74,143,224,.35)", n: "dải = biên mua chuyển khoản–bán (dữ liệu thật trong nguồn, KHÔNG phải khoảng tin cậy)", bd: true }]),
+        { c: "rgba(74,143,224,.35)", n: "dải = biên mua chuyển khoản–bán (dữ liệu thật trong nguồn, KHÔNG phải khoảng tin cậy)", bd: true }]
+        .concat(trUsd ? [{ c: css("--ink3-panel"), n: "Xu hướng Bình quân (hồi quy tuyến tính, nét đứt)" }] : [])),
     note: esc(g.freq_note) + " Mọi quan sát thật đều có marker, không nội suy."
   });
   let cells = "";
   ["CNY/VND", "EUR/VND", "GBP/VND", "JPY/VND"].forEach(k => {
     const s = g.fx[k];
+    const sPts = s.d.map((d, i) => ({ x: ts(d), v: s.avg[i], label: dmy(d) }));
+    const trS = trendSeries(k + " Bình quân", sPts);
     cells += '<div class="sm-cell"><h4>' + esc(k) + " · bình quân</h4>" +
       '<p class="cadence">Gần nhất: <span class="mono">' + dmy(s.as_of) + "</span></p>" +
       chartBox({
         kind: "line", xkind: "time", yDec: 0, yUnit: "VND", ttDec: 0, padL: 46, padR: 10,
         xTicks: timeTicks(ts(s.d[0]), ts(s.as_of), 3),
-        series: [{ name: k + " · bình quân", color: css("--series-1"), pts: s.d.map((d, i) => ({ x: ts(d), v: s.avg[i], label: dmy(d) })), w: 1.75, marker: "dot", endDot: true }]
+        series: (trS ? [trS] : []).concat([{ name: k + " · bình quân", color: css("--series-1"), pts: sPts, w: 1.75, marker: "dot", endDot: true }])
       }, 150) + "</div>";
   });
   h += panel({
     title: "CNY · EUR · GBP · JPY / VND — đường bình quân", unit: "VND",
     cadence: cadence(FREQ.week, dmy(u.as_of), "vcb"),
     body: '<div class="sm sm-4">' + cells + "</div>",
-    note: "Mỗi panel dùng thang VND riêng vì mức 4 cặp chênh nhau hàng chục lần — không chung trục, không dùng hai trục y. Biên mua chuyển khoản–bán chỉ hiển thị ở biểu đồ USD/VND phía trên."
+    note: "Mỗi panel dùng thang VND riêng vì mức 4 cặp chênh nhau hàng chục lần — không chung trục, không dùng hai trục y. Biên mua chuyển khoản–bán chỉ hiển thị ở biểu đồ USD/VND phía trên. Mỗi panel cũng có đường xám nét đứt là <b>xu hướng hồi quy tuyến tính</b> trên khung 12 tháng hiển thị."
   });
   return h + "</div>";
 }

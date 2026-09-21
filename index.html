@@ -1,4 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
+
 <title>Trạm Quan sát Bông &amp; Xơ</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -946,8 +948,8 @@ function eventHighlight(e, f) {
 function drawMilestone(el, cfg, h) {
   const W = Math.max(el.clientWidth || 600, 260);
   const narrow = W < 620;
-  const padL = 46, padR = 18, padT = narrow ? 64 : 74, padB = 76;
-  const iw = Math.max(W - padL - padR, 60), ih = Math.max(h - padT - padB, 80);
+  const padL = 46, padR = 18, padB = 76;
+  const iw = Math.max(W - padL - padR, 60);
   const a = cfg.actual, hz = cfg.horizons, anc = cfg.anchor, evs = cfg.events || [];
   const lastX = ts(a.d[a.d.length - 1]);
   // Trục X phải phủ CẢ mốc sự kiện cuối cùng, nếu không bảng sự kiện (8 dòng)
@@ -955,6 +957,42 @@ function drawMilestone(el, cfg, h) {
   const evMax = evs.length ? Math.max.apply(null, evs.map(e => ts(e.d))) : 0;
   const x0 = cfg.x0;
   const x1 = Math.max(ts(hz[hz.length - 1].date), evMax) + 2 * 86400000;
+  const X = (v) => padL + iw * (v - x0) / (x1 - x0);
+  /* ---- Xếp nhãn mốc sự kiện vào nhiều "làn" (row) để tránh đè chữ (sửa 2026-09-19,
+     sửa lại 2026-09-21 vì bản đầu vẫn đè chữ) ----
+     Bản đầu tiên hard-cap 2 làn: khi ≥3 mốc chồng x-range, mốc thứ 3 bị ép về làn 0, đè
+     chữ lên mốc đã có (đây là nguyên nhân báo cáo "mốc 24/9 bị đè chữ" lần 1).
+     Bản sửa lần 2 (giữa 2026-09-19) đổi sang skyline packing nhưng vẫn còn bug: xử lý theo
+     thứ tự ƯU TIÊN (Cao trước) thay vì theo thứ tự x, rồi chỉ theo dõi 1 mép-phải-cuối-cùng
+     mỗi làn (`rowEnd`) — khi 1 nhãn ưu tiên thấp hơn cần chèn vào bên TRÁI một nhãn đã xếp
+     trước đó trong cùng làn, `rowEnd` bị ghi đè xuống giá trị nhỏ hơn, khiến làn đó bị coi
+     là "trống" sớm hơn thực tế và 2 nhãn chồng lên nhau (đây là nguyên nhân báo cáo "vẫn đè
+     chữ" lần 2). Bản này (lần 3): mỗi làn giữ DANH SÁCH khoảng đã xếp, kiểm tra CHỒNG LẤN
+     THẬT với từng khoảng — đúng bất kể thứ tự xử lý. Vẫn ưu tiên "Cao" được xếp trước để
+     nhãn quan trọng nhất có cơ hội giữ chỗ cao nhất khi hết làn. */
+  const evx = evs.map((e, i) => ({ e: e, i: i, x: X(ts(e.d)), lbl: shortEvent(e.ten) }))
+    .filter(o => o.x >= padL - 2 && o.x <= padL + iw + 2).sort((p, q) => p.x - q.x);
+  const RANK = { "Cao": 0, "Trung bình": 1 };
+  const MAX_ROWS = 4;
+  const rows = []; // mỗi phần tử: mảng {left,right} các nhãn ĐÃ xếp vào làn đó
+  evx.slice().sort((p, q) => (RANK[p.e.muc_do] ?? 2) - (RANK[q.e.muc_do] ?? 2) || p.x - q.x)
+    .forEach(o => {
+      const w = o.lbl.length * 6.2 + 12;
+      const left = Math.max(padL, Math.min(o.x - w / 2, padL + iw - w));
+      const right = left + w;
+      let row = rows.findIndex(list => !list.some(iv => left < iv.right + 4 && right > iv.left - 4));
+      if (row === -1) {
+        if (rows.length >= MAX_ROWS) { o.noLabel = true; return; }
+        row = rows.length; rows.push([]);
+      }
+      rows[row].push({ left: left, right: right });
+      o.row = row; o.w = w; o.left = left;
+    });
+  const rowN = Math.max(rows.length, 1);
+  const rowStep = narrow ? 20 : 22;
+  const rowY = Array.from({ length: rowN }, (_, r) => (narrow ? 0 : 4) + r * rowStep);
+  const padT = (narrow ? 24 : 30) + rowN * rowStep;
+  const ih = Math.max(h - padT - padB, 80);
   const hist = [];
   for (let i = 0; i < a.d.length; i++) { const x = ts(a.d[i]); if (x >= x0) hist.push({ x: x, v: a.v[i], label: dmy(a.d[i]) }); }
   const lo = [{ x: lastX, v: anc.value }].concat(hz.map(x => ({ x: ts(x.date), v: x.low90 })));
@@ -966,7 +1004,6 @@ function drawMilestone(el, cfg, h) {
   const pY = (yMax - yMin) * 0.1 || 1; yMin -= pY; yMax += pY;
   const ticks = niceTicks(yMin, yMax, 4);
   yMin = Math.min(yMin, ticks[0]); yMax = Math.max(yMax, ticks[ticks.length - 1]);
-  const X = (v) => padL + iw * (v - x0) / (x1 - x0);
   const Y = (v) => padT + ih * (1 - (v - yMin) / (yMax - yMin));
   const plotB = padT + ih, laneT = plotB, laneH = 26, laneMid = laneT + laneH / 2;
   const axisY = laneT + laneH + 4;
@@ -999,27 +1036,16 @@ function drawMilestone(el, cfg, h) {
     '" stroke="' + C.pan + '" stroke-width="2"/>' +
     '<text x="' + (X(lastX) + 11).toFixed(1) + '" y="' + (Y(anc.value) - 9).toFixed(1) + '" fill="' + css("--anchor") +
     '" font-family="' + css("--font-mono") + '" font-size="12">Neo ' + n2(anc.value, 2) + "</text>";
-  const evx = evs.map((e, i) => ({ e: e, i: i, x: X(ts(e.d)), lbl: shortEvent(e.ten) }))
-    .filter(o => o.x >= padL - 2 && o.x <= padL + iw + 2).sort((p, q) => p.x - q.x);
-  const rowEnd = [-1e9, -1e9];
-  const rowY = narrow ? [0, 20] : [4, 26];
-  evx.forEach(o => {
-    const w = o.lbl.length * 6.2 + 12;
-    let left = o.x - w / 2;
-    o.row = (left < rowEnd[0] + 4) ? 1 : 0;
-    if (o.row === 1 && left < rowEnd[1] + 4) o.row = 0;
-    left = Math.max(padL, Math.min(left, padL + iw - w));
-    rowEnd[o.row] = Math.max(rowEnd[o.row], left + w);
-    o.w = w; o.left = left;
-  });
   const hl = cfg.hl === undefined ? -1 : cfg.hl;
   if (!narrow) evx.forEach(o => {
+    if (o.noLabel) return;
     const m = msOf(o.e.muc_do), on = hl === o.i;
     s += '<line x1="' + o.x.toFixed(1) + '" y1="' + (rowY[o.row] + 20) + '" x2="' + o.x.toFixed(1) + '" y2="' + plotB +
       '" stroke="' + css(m.c) + '" stroke-opacity="' + (on ? "1" : ".45") + '" stroke-width="1"' +
       (on ? "" : ' stroke-dasharray="2 4"') + "/>";
   });
   evx.forEach(o => {
+    if (o.noLabel) return;
     const m = msOf(o.e.muc_do), on = hl === o.i;
     s += '<g><rect x="' + o.left.toFixed(1) + '" y="' + rowY[o.row] + '" width="' + o.w.toFixed(1) +
       '" height="18" rx="3" fill="' + (on ? css("--panel-inset") : C.pan2) + '" stroke="' + css(m.c) +
@@ -1029,10 +1055,11 @@ function drawMilestone(el, cfg, h) {
   });
   /* nội dung chính (chữ vàng, luôn hiện) — chỉ cho mốc đã diễn ra có tính được số thật.
      Gộp theo NGÀY (không theo từng mốc riêng) vì 2 mốc "Cao" hay rơi đúng cùng ngày (vd 11/09
-     WASDE + CoT) — nếu vẽ riêng từng mốc sẽ chồng chữ lên nhau do cùng toạ độ X. */
+     WASDE + CoT) — nếu vẽ riêng từng mốc sẽ chồng chữ lên nhau do cùng toạ độ X. Vẽ cho MỌI
+     mốc có _hl bất kể noLabel, vì đây là nội dung số liệu chứ không phải nhãn tên mốc. */
   const hlByDate = {};
   evx.forEach(o => { if (o.e._hl) (hlByDate[o.e.d] = hlByDate[o.e.d] || []).push(o.e._hl); });
-  const hlY = rowY[1] + 18 + 12;
+  const hlY = rowY[rowN - 1] + 18 + 12;
   Object.keys(hlByDate).forEach(d => {
     const cx = X(ts(d));
     hlByDate[d].forEach((txt, i) => {
@@ -2073,7 +2100,8 @@ function viewFc1() {
       "<b>Chữ vàng</b> cạnh mốc là nội dung chính đã diễn ra tại đúng mốc đó. " +
       "Ba mốc lớn — báo cáo cung–cầu, vị thế đầu cơ và quyết định lãi suất — cùng rơi trong khoảng 11–16/09, " +
       "đoạn bất định lớn nhất của chân trời, gắn với khuyến nghị Lớp 2 ở " + jump(2, 3, "mục 3.4") + ". " +
-      "Màu hình thoi là <b>thang cường độ ảnh hưởng</b>, không phải thang tốt/xấu."
+      "Màu hình thoi là <b>thang cường độ ảnh hưởng</b>, không phải thang tốt/xấu. " +
+      "Khi nhiều mốc rơi sát ngày nhau, hộp chữ chỉ hiện cho các mốc <b>Cao</b> trước — mốc còn lại vẫn có hình thoi + đường dóng, di chuột vào để xem đầy đủ, hoặc xem toàn bộ ở bảng " + jump(2, 3, "mục 3.4") + "."
   });
   h += panel({
     span: "s4", title: "Bảng sự kiện",

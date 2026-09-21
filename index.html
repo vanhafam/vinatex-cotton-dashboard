@@ -1,6 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 
 
+
 <title>Trạm Quan sát Bông &amp; Xơ</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -989,9 +990,28 @@ function drawMilestone(el, cfg, h) {
       o.row = row; o.w = w; o.left = left;
     });
   const rowN = Math.max(rows.length, 1);
+  /* ---- Xếp dòng "chữ vàng" (nội dung chính đã diễn ra) — tính SỚM ở đây (không phải lúc
+     vẽ) để cộng đúng chiều cao cần thiết vào padT, tránh đè lên đường lane/hình thoi phía
+     dưới khi có ≥2 hàng chữ vàng (sửa 2026-09-21, xem ghi chú đầy đủ tại chỗ vẽ bên dưới). */
+  const hlByDate = {};
+  evx.forEach(o => { if (o.e._hl) (hlByDate[o.e.d] = hlByDate[o.e.d] || []).push(o.e._hl); });
+  const hlEntries = [];
+  Object.keys(hlByDate).forEach(d => {
+    const cx = X(ts(d));
+    hlByDate[d].forEach(txt => hlEntries.push({ cx: cx, txt: txt }));
+  });
+  const hlRows = [];
+  hlEntries.forEach(o => {
+    const w = o.txt.length * 5.6 + 10;
+    const left = o.cx - w / 2, right = o.cx + w / 2;
+    let row = hlRows.findIndex(list => !list.some(iv => left < iv.right + 6 && right > iv.left - 6));
+    if (row === -1) { row = hlRows.length; hlRows.push([]); }
+    hlRows[row].push({ left: left, right: right });
+    o.row = row;
+  });
   const rowStep = narrow ? 20 : 22;
   const rowY = Array.from({ length: rowN }, (_, r) => (narrow ? 0 : 4) + r * rowStep);
-  const padT = (narrow ? 24 : 30) + rowN * rowStep;
+  const padT = (narrow ? 24 : 30) + rowN * rowStep + (hlRows.length ? hlRows.length * 12 + 4 : 0);
   const ih = Math.max(h - padT - padB, 80);
   const hist = [];
   for (let i = 0; i < a.d.length; i++) { const x = ts(a.d[i]); if (x >= x0) hist.push({ x: x, v: a.v[i], label: dmy(a.d[i]) }); }
@@ -1056,17 +1076,17 @@ function drawMilestone(el, cfg, h) {
   /* nội dung chính (chữ vàng, luôn hiện) — chỉ cho mốc đã diễn ra có tính được số thật.
      Gộp theo NGÀY (không theo từng mốc riêng) vì 2 mốc "Cao" hay rơi đúng cùng ngày (vd 11/09
      WASDE + CoT) — nếu vẽ riêng từng mốc sẽ chồng chữ lên nhau do cùng toạ độ X. Vẽ cho MỌI
-     mốc có _hl bất kể noLabel, vì đây là nội dung số liệu chứ không phải nhãn tên mốc. */
-  const hlByDate = {};
-  evx.forEach(o => { if (o.e._hl) (hlByDate[o.e.d] = hlByDate[o.e.d] || []).push(o.e._hl); });
+     mốc có _hl bất kể noLabel, vì đây là nội dung số liệu chứ không phải nhãn tên mốc.
+     Sửa 2026-09-21: bản trước vẽ mọi ngày cùng 1 hàng (hlY cố định) — khi 2 NGÀY KHÁC NHAU
+     nhưng gần nhau về pixel X (thường xảy ra quanh cụm sự kiện dày, vd WASDE 11/09 và
+     CoT 15/09) thì 2 dòng chữ vẫn chồng lên nhau theo chiều ngang dù không cùng ngày. Đã
+     xếp `hlEntries`/`hlRows` vào nhiều hàng khi cần (tính SỚM ở trên, cùng chỗ tính padT) —
+     ở đây chỉ còn việc vẽ. */
   const hlY = rowY[rowN - 1] + 18 + 12;
-  Object.keys(hlByDate).forEach(d => {
-    const cx = X(ts(d));
-    hlByDate[d].forEach((txt, i) => {
-      s += '<text x="' + cx.toFixed(1) + '" y="' + (hlY + i * 12) +
-        '" text-anchor="middle" fill="' + css("--anchor") +
-        '" font-family="' + css("--font-ui") + '" font-size="10" font-weight="600">' + esc(txt) + "</text>";
-    });
+  hlEntries.forEach(o => {
+    s += '<text x="' + o.cx.toFixed(1) + '" y="' + (hlY + o.row * 12) +
+      '" text-anchor="middle" fill="' + css("--anchor") +
+      '" font-family="' + css("--font-ui") + '" font-size="10" font-weight="600">' + esc(o.txt) + "</text>";
   });
   s += '<line x1="' + padL + '" y1="' + laneT + '" x2="' + (padL + iw) + '" y2="' + laneT +
     '" stroke="' + C.hair + '" stroke-width="1"/>';

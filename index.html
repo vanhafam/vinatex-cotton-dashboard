@@ -535,7 +535,8 @@ const SOURCES = {
   cotZ:     { name: "CFTC (chuỗi gốc) · điểm z: Ước tính của bàn", url: "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" },
   ccf:      { name: "CCFGroup", url: "https://www.ccfgroup.com/" },
   banSoi:   { name: "Số liệu kỹ thuật Ban Sợi (tổng hợp từ các đơn vị thành viên)", url: null },
-  soiDesk:  { name: "Ước tính của bàn — dữ liệu gốc: CCFGroup, Cotlook Ltd, số liệu kỹ thuật Ban Sợi", url: null }
+  soiDesk:  { name: "Ước tính của bàn — dữ liệu gốc: CCFGroup, Cotlook Ltd, số liệu kỹ thuật Ban Sợi", url: null },
+  hq:       { name: "Cục Hải quan Việt Nam (số sơ bộ)", url: "https://www.customs.gov.vn/" }
 };
 /* ánh xạ tên miền trong lịch sự kiện -> khoá SOURCES (không hiện tên miền thô) */
 const SRC_BY_DOMAIN = {
@@ -1717,6 +1718,104 @@ function drawStackBars(el, cfg, h) {
   el.ontouchstart = (e) => { if (e.touches[0]) show(e.touches[0].clientX, e.touches[0].clientY); };
 }
 
+/** XNK xơ sợi Việt Nam theo tháng (thêm 19/10/2026, phần 4 tab Sợi) — cột đôi XK/NK theo khối lượng
+ *  (trục nghìn tấn) + đường xuất siêu = XK − NK trên cùng trục. Tháng có ghi chú dữ liệu (`notes`,
+ *  số nghi bị Hải quan điều chỉnh) được đánh dấu ⚠ và viền nét đứt trên đúng cột của chiều đó —
+ *  KHÔNG sửa, KHÔNG làm mờ số; nội dung ghi chú hiện khi rê chuột/chạm.
+ *  cfg: { months[], xq[], xv[], nq[], nv[], notes{ky:[{chieu,ghi_chu}]} } — tấn và USD. */
+function drawXnkBars(el, cfg, h) {
+  const W = Math.max(el.clientWidth || 320, 240), narrow = W < 560;
+  const padL = 46, padR = 10, padT = 26, padB = 26;
+  const iw = Math.max(W - padL - padR, 60), ih = Math.max(h - padT - padB, 60);
+  const M = cfg.months, n = M.length, K = 1000;
+  const num = (a, i) => (a && typeof a[i] === "number") ? a[i] : null;
+  const net = (i) => (num(cfg.xq, i) !== null && num(cfg.nq, i) !== null) ? cfg.xq[i] - cfg.nq[i] : null;
+  const netV = (i) => (num(cfg.xv, i) !== null && num(cfg.nv, i) !== null) ? cfg.xv[i] - cfg.nv[i] : null;
+  const px = (v, q) => (v !== null && q) ? v / (q * 1000) : null;
+  const vals = [0];
+  M.forEach((_, i) => [num(cfg.xq, i), num(cfg.nq, i), net(i)].forEach(v => { if (v !== null) vals.push(v / K); }));
+  const lo = Math.min.apply(null, vals), top = Math.max.apply(null, vals) * 1.1 || 1;
+  const ticks = niceTicks(lo, top, 4);
+  const tStep = ticks.length > 1 ? ticks[1] - ticks[0] : top;
+  while (ticks[ticks.length - 1] < top) ticks.push(ticks[ticks.length - 1] + tStep);
+  const yMin = Math.min(0, ticks[0]), yMax = ticks[ticks.length - 1];
+  const Y = (v) => padT + ih * (1 - (v - yMin) / (yMax - yMin));
+  const bandW = iw / n, bw = Math.max(Math.min(bandW * 0.36, 20), 1.5), gap = Math.min(bandW * 0.06, 2);
+  const cx = (i) => padL + bandW * (i + 0.5);
+  const flag = (i, chieu) => (cfg.notes[M[i]] || []).filter(x => x.chieu === chieu);
+  const C = chartColors(), cX = css("--series-1"), cN = css("--series-4"), cS = css("--accent-panel");
+  let s = '<svg width="' + W + '" height="' + h + '" viewBox="0 0 ' + W + " " + h + '" role="img" ' +
+    'aria-label="Khối lượng xuất khẩu, nhập khẩu và xuất siêu xơ sợi của Việt Nam theo tháng" style="display:block">';
+  ticks.forEach(t => {
+    s += '<line x1="' + padL + '" y1="' + Y(t).toFixed(1) + '" x2="' + (padL + iw) + '" y2="' + Y(t).toFixed(1) +
+      '" stroke="' + C.grid + '" stroke-width="1"/>' +
+      '<text x="' + (padL - 7) + '" y="' + (Y(t) + 3.5).toFixed(1) + '" text-anchor="end" fill="' + C.mut +
+      '" font-family="' + css("--font-mono") + '" font-size="11">' + n2(t, 0) + "</text>";
+  });
+  s += '<text x="' + padL + '" y="11" fill="' + C.mut + '" font-family="' + css("--font-ui") +
+    '" font-size="10.5" font-weight="600" letter-spacing=".04em">NGHÌN TẤN</text>';
+  M.forEach((k, i) => {
+    if (i > 0 && String(k).slice(5) === "01") {
+      const x = padL + bandW * i;
+      s += '<line x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (padT + ih) +
+        '" stroke="' + C.bs + '" stroke-width="1" stroke-dasharray="3 3"/>' +
+        '<text x="' + (x + 4).toFixed(1) + '" y="' + (padT + 10) + '" fill="' + C.mut + '" font-family="' + css("--font-mono") +
+        '" font-size="10.5">' + esc(String(k).slice(0, 4)) + "</text>";
+    }
+  });
+  M.forEach((k, i) => {
+    const c = cx(i);
+    [[num(cfg.xq, i), cX, c - gap / 2 - bw, "Xuất khẩu"], [num(cfg.nq, i), cN, c + gap / 2, "Nhập khẩu"]].forEach(b => {
+      if (b[0] === null) return;
+      const y1 = Y(b[0] / K), y0 = Y(0), fl = flag(i, b[3]).length > 0;
+      s += '<rect x="' + b[2].toFixed(1) + '" y="' + Math.min(y1, y0).toFixed(1) + '" width="' + bw.toFixed(1) +
+        '" height="' + Math.max(Math.abs(y0 - y1), 0.5).toFixed(1) + '" fill="' + b[1] + '"' +
+        (fl ? ' stroke="' + cS + '" stroke-width="1.5" stroke-dasharray="3 2"' : "") + "/>";
+      if (fl) s += '<text x="' + (b[2] + bw / 2).toFixed(1) + '" y="' + (Math.min(y1, y0) - 5).toFixed(1) +
+        '" text-anchor="middle" fill="' + cS + '" font-size="13" font-weight="700">⚠</text>';
+    });
+    const mm = +String(k).slice(5);
+    if ((mm - 1) % (narrow ? 6 : 3) === 0)
+      s += '<text x="' + c.toFixed(1) + '" y="' + (padT + ih + 15) + '" text-anchor="middle" fill="' + C.mut +
+        '" font-family="' + css("--font-mono") + '" font-size="11">' + esc(String(k).slice(5) + "/" + String(k).slice(2, 4)) + "</text>";
+  });
+  if (yMin < 0) s += '<line x1="' + padL + '" y1="' + Y(0).toFixed(1) + '" x2="' + (padL + iw) + '" y2="' + Y(0).toFixed(1) +
+    '" stroke="' + C.sec + '" stroke-width="1"/>';
+  const netPts = M.map((_, i) => ({ x: i, v: net(i) === null ? null : net(i) / K }));
+  s += '<path d="' + pathFrom(netPts, (i) => cx(i), Y) + '" fill="none" stroke="' + cS +
+    '" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/>';
+  netPts.forEach(p => { if (p.v !== null) s += '<circle cx="' + cx(p.x).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="2.4" fill="' + cS + '"/>'; });
+  s += '<line x1="' + padL + '" y1="' + (padT + ih) + '" x2="' + (padL + iw) + '" y2="' + (padT + ih) +
+    '" stroke="' + C.bs + '" stroke-width="1"/>';
+  s += '<rect class="xb-hi" x="0" y="' + padT + '" width="' + bandW.toFixed(1) + '" height="' + ih +
+    '" fill="' + C.pri + '" opacity=".07" style="display:none"/>';
+  s += "</svg>";
+  el.innerHTML = s;
+  const hi = el.querySelector(".xb-hi");
+  const row = (sw, nm, q, v) => '<div class="tt-r"><span class="tt-sw" style="background:' + sw + '"></span><span class="tt-nm">' + nm +
+    '</span><span class="tt-v">' + (q === null ? "—" : nInt(q) + " tấn") + (v === null ? "" : " · " + n2(v / 1e6, 1) + " tr. USD") +
+    (px(v, q) !== null && q > 0 ? " · " + n2(px(v, q), 2) + " USD/kg" : "") + "</span></div>";
+  const show = (clientX, clientY) => {
+    const r = el.getBoundingClientRect(), i = Math.floor((clientX - r.left - padL) / bandW);
+    if (i < 0 || i >= n) { hideTT(); if (hi) hi.style.display = "none"; return; }
+    if (hi) { hi.setAttribute("x", (padL + bandW * i).toFixed(1)); hi.style.display = ""; }
+    const k = M[i];
+    let t = '<div class="tt-hd">Tháng ' + esc(String(k).slice(5) + "/" + String(k).slice(0, 4)) + '</div><div class="tt-rows">' +
+      row(cX, "Xuất khẩu", num(cfg.xq, i), num(cfg.xv, i)) + row(cN, "Nhập khẩu", num(cfg.nq, i), num(cfg.nv, i));
+    const nq = net(i), nv = netV(i);
+    t += '<div class="tt-r"><span class="tt-sw" style="background:' + cS + '"></span><span class="tt-nm">' +
+      (nq !== null && nq < 0 ? "Nhập siêu" : "Xuất siêu") + '</span><span class="tt-v">' +
+      (nq === null ? "—" : nInt(Math.abs(nq)) + " tấn") + (nv === null ? "" : " · " + n2(Math.abs(nv) / 1e6, 1) + " tr. USD") + "</span></div></div>";
+    const ns = cfg.notes[k] || [];
+    if (ns.length) t += '<div class="tt-body">' + ns.map(x => "⚠ " + esc(x.chieu) + ": " + esc(x.ghi_chu)).join("\n") + "</div>";
+    t += '<div class="tt-src">Nguồn: ' + srcLink("hq") + "</div>";
+    placeTT(t, clientX, clientY);
+  };
+  el.onmousemove = (ev) => show(ev.clientX, ev.clientY);
+  el.onmouseleave = () => { hideTT(); if (hi) hi.style.display = "none"; };
+  el.ontouchstart = (e) => { if (e.touches[0]) show(e.touches[0].clientX, e.touches[0].clientY); };
+}
+
 function viewSoi() {
   const s = DATA.soi;
   if (!s) return noData("Sợi");
@@ -1803,8 +1902,8 @@ function viewSoi() {
   }
 
   /* ---- đầu trang + ghi chú phạm vi dữ liệu ----
-     `data_gap_warning` của document nay chỉ còn là CÔNG BỐ PHẠM VI (2/7 nhóm chi-số, chưa có
-     nhóm XNK hải quan VN) — không còn điểm nào đáng báo động, nên hiển thị bằng dòng ghi chú
+     `data_gap_warning` của document nay chỉ còn là CÔNG BỐ PHẠM VI (số nhóm chi-số đã bóc tách,
+     XNK hải quan VN là số sơ bộ — 19/10/2026) — không còn điểm nào đáng báo động, nên hiển thị bằng dòng ghi chú
      nhỏ trung tính `.frame-label`, KHÔNG dùng thẻ cảnh báo. Vẫn phải hiện, không được bỏ. */
   let h = pageHd("Diễn biến thị trường · Sợi", "Sợi — biên kéo sợi & cung–cầu",
     "Kéo 1 kg sợi từ bông hôm nay còn lại bao nhiêu, và thị trường sợi lớn nhất thế giới đang dư hay thiếu?",
@@ -2178,7 +2277,113 @@ function viewSoi() {
 
   /* =================== PHẦN 4 — VỊ THẾ VIỆT NAM =================== */
   h += partHd("Phần 4", "Vị thế Việt Nam — giá sợi so với các nguồn cung cạnh tranh",
-    "Sợi Việt Nam đang đắt hay rẻ hơn sợi cùng loại của các nước xuất khẩu khác, và bán vào Trung Quốc còn lãi hay không.");
+    "Việt Nam xuất và nhập bao nhiêu xơ sợi mỗi tháng, sợi Việt Nam đang đắt hay rẻ hơn sợi cùng loại của các nước xuất khẩu khác, " +
+    "và bán vào Trung Quốc còn lãi hay không.");
+
+  /* 19/10/2026: XNK xơ sợi Việt Nam theo tháng (số sơ bộ Hải quan) — panel đầu phần 4.
+     Snapshot cũ không có khoá `xnk_vn` -> panel báo chưa có dữ liệu, không lỗi. */
+  const XV = P4.xnk_vn;
+  const hasXnk = !!(XV && Array.isArray(XV.months) && XV.months.length && Array.isArray(XV.xk_qty));
+  if (!hasXnk) {
+    h += panel({
+      span: "s12", title: "Xuất nhập khẩu xơ sợi của Việt Nam — theo tháng",
+      cadence: cadence(FREQ.month, "—", "hq"), body: panelMissing("Chưa có dữ liệu ở thời điểm này.")
+    });
+  } else {
+    const xm = XV.months, L = xm.length - 1, lastK = xm[L], yr = String(lastK).slice(0, 4), mm = String(lastK).slice(5);
+    const nv = (a, i) => (a && i >= 0 && typeof a[i] === "number") ? a[i] : null;
+    const pct = (a, b) => (a !== null && b !== null && b !== 0) ? (a - b) / Math.abs(b) * 100 : null;
+    const pxk = (v, q) => (v !== null && q) ? v / (q * 1000) : null;
+    const notesBy = {};
+    (XV.notes || []).forEach(x => { (notesBy[x.ky] = notesBy[x.ky] || []).push(x); });
+    const iPY = xm.indexOf((+yr - 1) + "-" + mm);
+    /** cộng lũy kế từ tháng 1 tới tháng `mm` của năm `y`; thiếu 1 tháng nào -> null (không cộng hụt) */
+    const ytd = (arr, y) => {
+      let t = 0;
+      for (let m = 1; m <= +mm; m++) {
+        const v = nv(arr, xm.indexOf(y + "-" + String(m).padStart(2, "0")));
+        if (v === null) return null;
+        t += v;
+      }
+      return t;
+    };
+    const flaggedIn = (y, chieu) => (XV.notes || []).filter(x => x.chieu === chieu && String(x.ky).slice(0, 4) === String(y) &&
+      +String(x.ky).slice(5) <= +mm);
+    const D = {
+      xk: { q: nv(XV.xk_qty, L), v: nv(XV.xk_val, L), q0: nv(XV.xk_qty, iPY), v0: nv(XV.xk_val, iPY),
+            yq: ytd(XV.xk_qty, yr), yv: ytd(XV.xk_val, yr), yq0: ytd(XV.xk_qty, +yr - 1), yv0: ytd(XV.xk_val, +yr - 1) },
+      nk: { q: nv(XV.nk_qty, L), v: nv(XV.nk_val, L), q0: nv(XV.nk_qty, iPY), v0: nv(XV.nk_val, iPY),
+            yq: ytd(XV.nk_qty, yr), yv: ytd(XV.nk_val, yr), yq0: ytd(XV.nk_qty, +yr - 1), yv0: ytd(XV.nk_val, +yr - 1) }
+    };
+    const sub = (a, b) => (a !== null && b !== null) ? a - b : null;
+    const NET = {};
+    ["q", "v", "q0", "v0", "yq", "yv", "yq0", "yv0"].forEach(k => { NET[k] = sub(D.xk[k], D.nk[k]); });
+    const kyF = kyFull(lastK), kyPY = mm + "/" + (+yr - 1), lkLbl = "lũy kế " + (+mm) + "T/" + yr;
+    function xTile(label, q, v, q0, v0, grp, flagTxt, extra) {
+      return '<div class="tile"><span class="tile-label">' + esc(label) + '</span><span class="tile-value">' +
+        nInt(q) + '<span class="tile-unit">tấn</span></span>' +
+        deltaHtml(pct(q, q0), 1, "% khối lượng so cùng kỳ", grp, 0.05) +
+        deltaHtml(pct(v, v0), 1, "% trị giá so cùng kỳ", grp, 0.05) +
+        '<span class="tile-note">' + (v !== null ? n2(v / 1e6, 1) + " triệu USD" : "—") +
+        (pxk(v, q) !== null && q > 0 ? " · " + n2(pxk(v, q), 2) + " USD/kg" : "") +
+        (extra ? " · " + esc(extra) : "") + (flagTxt ? " · ⚠ " + esc(flagTxt) : "") + "</span></div>";
+    }
+    function netTile(label, q, v, q0) {
+      return '<div class="tile"><span class="tile-label">' + esc(label) + '</span><span class="tile-value">' +
+        (q === null ? "—" : nInt(Math.abs(q))) + '<span class="tile-unit">tấn' + (q !== null && q < 0 ? " nhập siêu" : "") + "</span></span>" +
+        deltaHtml(pct(q, q0), 1, "% so cùng kỳ", "neutral", 0.05) +
+        '<span class="tile-note">' + (v === null ? "—" : (v < 0 ? "nhập siêu " : "") + n2(Math.abs(v) / 1e6, 1) + " triệu USD") + "</span></div>";
+    }
+    const flM = (chieu) => (notesBy[lastK] || []).some(x => x.chieu === chieu) ? "số tháng này có ghi chú" : "";
+    const flY = (chieu) => flaggedIn(yr, chieu).length ? "gồm tháng có ghi chú" : "";
+    let xb = '<p class="cb-cap" style="margin:0 0 8px">Tháng gần nhất · ' + esc(kyF) + " · so " + esc(kyPY) + "</p>" +
+      '<div class="tiles tiles-3">' +
+      xTile("Xuất khẩu · " + kyF, D.xk.q, D.xk.v, D.xk.q0, D.xk.v0, "demand", flM("Xuất khẩu")) +
+      xTile("Nhập khẩu · " + kyF, D.nk.q, D.nk.v, D.nk.q0, D.nk.v0, "neutral", flM("Nhập khẩu")) +
+      netTile((NET.q !== null && NET.q < 0 ? "Nhập siêu · " : "Xuất siêu · ") + kyF, NET.q, NET.v, NET.q0) + "</div>" +
+      '<p class="cb-cap" style="margin:16px 0 8px">Lũy kế từ đầu năm · ' + esc(lkLbl) + " · so cùng kỳ " + (+yr - 1) + "</p>" +
+      '<div class="tiles tiles-3">' +
+      xTile("Xuất khẩu · " + lkLbl, D.xk.yq, D.xk.yv, D.xk.yq0, D.xk.yv0, "demand", flY("Xuất khẩu"), "cộng từ số tháng") +
+      xTile("Nhập khẩu · " + lkLbl, D.nk.yq, D.nk.yv, D.nk.yq0, D.nk.yv0, "neutral", flY("Nhập khẩu"), "cộng từ số tháng") +
+      netTile((NET.yq !== null && NET.yq < 0 ? "Nhập siêu · " : "Xuất siêu · ") + lkLbl, NET.yq, NET.yv, NET.yq0) + "</div>";
+    xb += '<div style="margin-top:16px">' + chartBox({
+      months: xm, xq: XV.xk_qty, xv: XV.xk_val, nq: XV.nk_qty, nv: XV.nk_val, notes: notesBy
+    }, 300, drawXnkBars) + "</div>" +
+      legend([{ c: css("--series-1"), n: "Xuất khẩu (khối lượng)", sq: true }, { c: css("--series-4"), n: "Nhập khẩu (khối lượng)", sq: true },
+        { c: css("--accent-panel"), n: "Xuất siêu = xuất khẩu − nhập khẩu" }]) +
+      '<p class="chart-note"><span style="color:var(--accent);font-weight:700">⚠</span> cột viền nét đứt = tháng có ghi chú dữ liệu ' +
+      "(số sơ bộ nghi đã bị Hải quan điều chỉnh) — rê chuột hoặc chạm vào cột để đọc nội dung.</p>";
+    const prPts = (q, v) => xm.map((k, i) => {
+      const p = pxk(nv(v, i), nv(q, i));
+      const ns = (notesBy[k] || []).filter(x => x.chieu === (q === XV.xk_qty ? "Xuất khẩu" : "Nhập khẩu"));
+      return { x: i, v: p, label: "Tháng " + kyFull(k), note: ns.length ? ns.map(x => "⚠ " + x.chieu + ": " + x.ghi_chu).join("\n") : undefined };
+    });
+    xb += '<h4 style="font-size:12.5px;font-weight:600;color:var(--ink-1);margin:18px 0 4px">Giá bình quân theo tháng ' +
+      unitTag("USD/kg = trị giá USD ÷ (tấn × 1.000)") + "</h4>" +
+      chartBox({
+        kind: "line", xkind: "band", yDec: 1, yUnit: "USD/kg", ttDec: 2, padL: 40,
+        xTicks: xm.map((k, i) => ({ x: i, label: kyTick(k) })).filter((t, i) => (+String(xm[i]).slice(5) - 1) % 6 === 0),
+        series: [
+          { name: "Giá bình quân xuất khẩu", color: css("--series-1"), w: 2, marker: "dot", endDot: true, pts: prPts(XV.xk_qty, XV.xk_val) },
+          { name: "Giá bình quân nhập khẩu", color: css("--series-4"), w: 1.5, endDot: true, pts: prPts(XV.nk_qty, XV.nk_val) }
+        ]
+      }, 170) +
+      legend([{ c: css("--series-1"), n: "Giá bình quân xuất khẩu" }, { c: css("--series-4"), n: "Giá bình quân nhập khẩu" }]);
+    if ((XV.notes || []).length) {
+      xb += '<div class="xref"><span class="xref-glyph">⚠</span><div style="min-width:0"><p><b>Tháng có ghi chú dữ liệu — số giữ nguyên như Hải quan công bố, trang không tự sửa:</b></p>' +
+        (XV.notes || []).map(x => '<p style="margin-top:4px"><span class="mono">' + esc(kyFull(x.ky)) + "</span> · " + esc(x.chieu) + " — " +
+          esc(x.ghi_chu) + "</p>").join("") + "</div></div>";
+    }
+    h += panel({
+      span: "s12", title: "Xuất nhập khẩu xơ sợi của Việt Nam — theo tháng" + chip("mặt hàng: " + (XV.mat_hang || "—")),
+      unit: "tấn · triệu USD",
+      cadence: cadence(FREQ.month, kyF, "hq", XV.trang_thai ? "trạng thái số liệu: " + esc(XV.trang_thai) : ""),
+      body: xb,
+      note: (XV.note ? esc(XV.note) + " " : "") +
+        "Lũy kế trên trang là <b>tổng các số tháng</b>, nên không gồm phần lượng Hải quan cộng dồn điều chỉnh cho các tháng trước (xem ghi chú ⚠). " +
+        "Xuất khẩu tô màu theo chiều cầu với hàng Việt Nam; nhập khẩu và xuất siêu để trung tính vì nhóm hàng gộp cả xơ, sợi nguyên liệu đầu vào lẫn sợi thành phẩm."
+    });
+  }
 
   const usdK = [["vn_32s", "--series-1", "Việt Nam"], ["in_32s", "--series-3", "Ấn Độ"],
     ["pk_10s", "--series-4", "Pakistan"], ["uz_32s", "--series-6", "Uzbekistan"]].filter(k => has(G[k[0]]));
@@ -2255,9 +2460,11 @@ function viewSoi() {
      (chỉ so sánh chéo giá; thiếu hẳn nhóm XNK hải quan Việt Nam) được viết lại bằng ngôn ngữ
      người đọc dưới đây; không được bỏ vế "chưa có dữ liệu hải quan VN". */
   h += '<div class="s12">' + xref("<b>Phạm vi phần 4 dừng ở đây.</b> Vị thế Việt Nam trong tab này được đo bằng " +
+    (hasXnk ? "<b>xuất nhập khẩu xơ sợi theo tháng</b> của Hải quan Việt Nam (số sơ bộ, gộp xơ và sợi mọi loại, chưa tách khối FDI/trong nước), " : "") +
     "<b>so sánh chéo mức giá</b>, <b>import profit</b> tại thị trường Trung Quốc, và số <b>hải quan Trung Quốc</b> về nhập khẩu sợi từ Việt Nam ở " +
-    "phần 2. Trang <b>không</b> hiển thị số liệu xuất nhập khẩu hải quan Việt Nam — nhóm dữ liệu đó chưa có nguồn nào được duyệt cho mục này, " +
-    "và chỗ trống được để lộ ra có chủ đích, không lấp bằng số suy đoán.") + "</div>";
+    "phần 2." + (hasXnk
+      ? " Số Hải quan Việt Nam là tổng của cả nhóm hàng — không đọc thành riêng sợi cotton, và không đặt cạnh số hải quan Trung Quốc (HS 5205) để suy ra thị phần."
+      : " Ở thời điểm đang xem chưa có số liệu xuất nhập khẩu hải quan Việt Nam; chỗ trống được để lộ ra có chủ đích, không lấp bằng số suy đoán.")) + "</div>";
 
   return h + "</div>";
 }

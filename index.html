@@ -41,6 +41,11 @@
   --ms-1:#F0E4C6; --ms-2:#C8B99A; --ms-3:#9C927E;
   --fc-band:rgba(74,143,224,.16); --fc-center:#86B6EF;
   --fc-hatch:rgba(233,240,248,.06); --anchor:#E6D8B8;
+  /* cơ cấu chi số sợi NK Trung Quốc (tab Sợi, 19/10/2026): 2 họ, mỗi họ ramp 1 sắc tối→sáng theo chi số tăng dần.
+     Validator (dark, #16283C): 2 bước tối dưới 3:1 và cặp kề cùng họ ΔE < 15 — có quan hệ thứ bậc trong họ,
+     bù bằng khe 1px giữa các khúc, chú giải đầy đủ và tooltip ghi tên + tấn + % từng nhóm. */
+  --cs-cd-1:#2F6DB8; --cs-cd-2:#4A8FE0; --cs-cd-3:#7EB0EE; --cs-cd-4:#B4D1F5;
+  --cs-ck-1:#B4531F; --cs-ck-2:#DD6A2F; --cs-ck-3:#EE9A68; --cs-ck-4:#F6C29E;
 }
 .on-paper{
   --bg:var(--paper); --bg-2:var(--paper-2); --bg-3:var(--paper-3);
@@ -815,7 +820,8 @@ function drawChart(el, cfg, h) {
     if (hl.label) s += '<text x="' + (padL + 6) + '" y="' + (Y(hl.v) - 5).toFixed(1) + '" fill="' + (hl.color || C.sec) +
       '" font-family="' + css("--font-ui") + '" font-size="10.5" font-weight="600" letter-spacing=".04em">' + esc(hl.label) + "</text>";
   });
-  (cfg.xTicks || []).forEach(t => {
+  /* cfg.xTicksNarrow (thêm 19/10/2026): bộ nhãn trục X thưa hơn khi biểu đồ hẹp (< 560px) để nhãn không đè nhau */
+  ((W < 560 && cfg.xTicksNarrow) ? cfg.xTicksNarrow : (cfg.xTicks || [])).forEach(t => {
     s += '<text x="' + X(t.x).toFixed(1) + '" y="' + (padT + ih + 15) + '" text-anchor="middle" fill="' + C.mut +
       '" font-family="' + css("--font-mono") + '" font-size="11">' + esc(t.label) + "</text>";
   });
@@ -1816,6 +1822,86 @@ function drawXnkBars(el, cfg, h) {
   el.ontouchstart = (e) => { if (e.touches[0]) show(e.touches[0].clientX, e.touches[0].clientY); };
 }
 
+/** Cơ cấu chi số sợi cotton NK Trung Quốc (thêm 19/10/2026, phần 2 tab Sợi) — cột chồng 100% theo tháng.
+ *  cfg: { months[], order:[{key,short,hs,color}], qty{key:[]}, khac[], total[], unit }
+ *  Khúc dưới cùng = nhóm đầu trong `order`. Tỷ trọng = tấn nhóm ÷ tổng HS 5205 tháng đó.
+ *  Hover/chạm 1 cột -> tooltip: tấn + % từng nhóm (kèm mã HS), "Khác" và tổng. */
+function drawShareBars(el, cfg, h) {
+  const W = Math.max(el.clientWidth || 320, 240), narrow = W < 560;
+  const padL = 40, padR = 10, padT = 22, padB = 26;
+  const iw = Math.max(W - padL - padR, 60), ih = Math.max(h - padT - padB, 60);
+  const M = cfg.months, n = M.length;
+  const num = (a, i) => (a && typeof a[i] === "number") ? a[i] : null;
+  const segs = cfg.order.map(g => ({ k: g.key, c: g.color, a: cfg.qty[g.key] }))
+    .concat([{ k: "__khac", c: cfg.khacColor, a: cfg.khac }]);
+  const tot = (i) => {
+    const t = num(cfg.total, i);
+    if (t !== null) return t;
+    return segs.reduce((acc, s) => acc + (num(s.a, i) || 0), 0) || null;
+  };
+  const Y = (p) => padT + ih * (1 - p / 100);
+  const bandW = iw / n, bw = Math.max(Math.min(bandW * 0.7, 34), 2);
+  const C = chartColors();
+  let s = '<svg width="' + W + '" height="' + h + '" viewBox="0 0 ' + W + " " + h + '" role="img" ' +
+    'aria-label="Tỷ trọng từng nhóm chi số trong tổng nhập khẩu sợi cotton của Trung Quốc theo tháng" style="display:block">';
+  [0, 25, 50, 75, 100].forEach(t => {
+    s += '<line x1="' + padL + '" y1="' + Y(t).toFixed(1) + '" x2="' + (padL + iw) + '" y2="' + Y(t).toFixed(1) +
+      '" stroke="' + C.grid + '" stroke-width="1"/>' +
+      '<text x="' + (padL - 7) + '" y="' + (Y(t) + 3.5).toFixed(1) + '" text-anchor="end" fill="' + C.mut +
+      '" font-family="' + css("--font-mono") + '" font-size="11">' + t + "%</text>";
+  });
+  M.forEach((k, i) => {
+    const cx = padL + bandW * (i + 0.5), T = tot(i);
+    if (T) {
+      let acc = 0;
+      segs.forEach(sg => {
+        const v = num(sg.a, i);
+        if (v === null || v <= 0) return;
+        const p = v / T * 100, y1 = Y(acc + p), y0 = Y(acc);
+        s += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + y1.toFixed(1) + '" width="' + bw.toFixed(1) +
+          '" height="' + Math.max(y0 - y1 - 1, 0.5).toFixed(1) + '" fill="' + sg.c + '"/>';
+        acc += p;
+      });
+    }
+    if (i > 0 && String(k).slice(5) === "01") {
+      const x = padL + bandW * i;
+      s += '<line x1="' + x.toFixed(1) + '" y1="' + (padT - 4) + '" x2="' + x.toFixed(1) + '" y2="' + (padT + ih) +
+        '" stroke="' + C.pri + '" stroke-opacity=".55" stroke-width="1" stroke-dasharray="3 3"/>' +
+        '<text x="' + (x + 4).toFixed(1) + '" y="' + (padT - 8) + '" fill="' + C.mut + '" font-family="' + css("--font-mono") +
+        '" font-size="10.5">' + esc(String(k).slice(0, 4)) + "</text>";
+    }
+    const mm = +String(k).slice(5);
+    if ((mm - 1) % (narrow ? 6 : 3) === 0)
+      s += '<text x="' + cx.toFixed(1) + '" y="' + (padT + ih + 15) + '" text-anchor="middle" fill="' + C.mut +
+        '" font-family="' + css("--font-mono") + '" font-size="11">' + esc(String(k).slice(5) + "/" + String(k).slice(2, 4)) + "</text>";
+  });
+  s += '<rect class="sh-hi" x="0" y="' + padT + '" width="' + bandW.toFixed(1) + '" height="' + ih +
+    '" fill="' + C.pri + '" opacity=".08" style="display:none"/>';
+  s += "</svg>";
+  el.innerHTML = s;
+  const hi = el.querySelector(".sh-hi");
+  const show = (clientX, clientY) => {
+    const r = el.getBoundingClientRect(), i = Math.floor((clientX - r.left - padL) / bandW);
+    if (i < 0 || i >= n) { hideTT(); if (hi) hi.style.display = "none"; return; }
+    if (hi) { hi.setAttribute("x", (padL + bandW * i).toFixed(1)); hi.style.display = ""; }
+    const k = M[i], T = tot(i);
+    const row = (c, nm, v) => '<div class="tt-r"><span class="tt-sw" style="background:' + c + '"></span><span class="tt-nm">' + nm +
+      '</span><span class="tt-v">' + (v === null ? "—" : nInt(v) + " " + esc(cfg.unit) + (T ? " · " + n2(v / T * 100, 1) + "%" : "")) + "</span></div>";
+    let t = '<div class="tt-hd">Tháng ' + esc(String(k).slice(5) + "/" + String(k).slice(0, 4)) + '</div><div class="tt-rows">';
+    cfg.order.slice().reverse().forEach(g => {
+      t += row(g.color, esc(g.short) + (g.hs ? ' <span style="color:var(--ink3-panel)">· HS ' + esc(g.hs) + "</span>" : ""), num(cfg.qty[g.key], i));
+    });
+    t += row(cfg.khacColor, "Khác", num(cfg.khac, i));
+    t += '<div class="tt-r"><span class="tt-nm">Tổng nhập khẩu sợi cotton (HS 5205)</span><span class="tt-v">' +
+      (T ? nInt(T) + " " + esc(cfg.unit) : "—") + "</span></div></div>";
+    t += '<div class="tt-src">Nguồn: ' + srcLink("ccf") + " (số hải quan Trung Quốc)</div>";
+    placeTT(t, clientX, clientY);
+  };
+  el.onmousemove = (ev) => show(ev.clientX, ev.clientY);
+  el.onmouseleave = () => { hideTT(); if (hi) hi.style.display = "none"; };
+  el.ontouchstart = (e) => { if (e.touches[0]) show(e.touches[0].clientX, e.touches[0].clientY); };
+}
+
 function viewSoi() {
   const s = DATA.soi;
   if (!s) return noData("Sợi");
@@ -2062,15 +2148,18 @@ function viewSoi() {
 
   const CT_SX = "Sản lượng sợi cotton (Trung Quốc)";
   const CT_NK = "Nhập khẩu sợi cotton (Trung Quốc)";
-  const CT_NK_CS = R2.map(r => r.chi_tieu).find(x => x.indexOf("chỉ 2/7 nhóm chi-số") >= 0) || "";
+  /* 19/10/2026: bỏ hiển thị chuỗi NK "phần đã bóc tách theo chi số" (chỉ 2 nhóm) — đã thay bằng panel cơ cấu
+     đủ 8 nhóm chi số bên dưới. Dữ liệu cũ vẫn nằm nguyên trong document, chỉ thôi vẽ. */
   const sx = monthly(CT_SX, "Tổng");
+  const monthTicks = (rows, every) => rows.map((r, i) => ({ x: i, label: kyTick(r.ky), mm: +String(r.ky).slice(5) }))
+    .filter(t => (t.mm - 1) % every === 0);
   h += panel({
     span: "s12", title: "Sản lượng sợi cotton Trung Quốc theo tháng",
     unit: sx.length ? sx[0].don_vi : "—",
     cadence: cadence(FREQ.month, sx.length ? kyFull(sx[sx.length - 1].ky) : "—", "ccf"),
     body: sx.length ? chartBox({
       kind: "line", xkind: "band", yDec: 0, yUnit: sx[0].don_vi, ttDec: 0, padL: 50,
-      xTicks: sx.map((r, i) => ({ x: i, label: kyTick(r.ky) })).filter((_, i) => i % 3 === 0),
+      xTicks: monthTicks(sx, 3), xTicksNarrow: monthTicks(sx, 6),
       series: [{
         name: "Sản lượng sợi cotton (Trung Quốc)", color: css("--series-1"), w: 1.75, endDot: true,
         pts: sx.map((r, i) => ({ x: i, v: r.khoi_luong, label: kyFull(r.ky) }))
@@ -2081,33 +2170,104 @@ function viewSoi() {
       "vừa là cầu bông mạnh hơn — hai hệ quả ngược chiều nhau với một tập đoàn vừa mua bông vừa bán sợi."
   });
 
-  const nkT = monthly(CT_NK, "Tổng"), nkC = CT_NK_CS ? monthly(CT_NK_CS, "Tổng") : [];
-  const axis = nkT.length ? nkT : nkC;
-  let nkSer = [];
-  if (nkT.length) nkSer.push({
-    name: CT_NK, ticker: "Tổng", color: css("--series-1"), w: 2, endDot: true,
-    pts: axis.map((r, i) => { const m = nkT.find(q => q.ky === r.ky); return { x: i, v: m ? m.khoi_luong : null, label: kyFull(r.ky) }; })
-  });
-  if (nkC.length) nkSer.push({
-    name: CT_NK_CS, ticker: "2/7 chi-số", color: css("--series-4"), w: 1.75, endDot: true,
-    pts: axis.map((r, i) => { const m = nkC.find(q => q.ky === r.ky); return { x: i, v: m ? m.khoi_luong : null, label: kyFull(r.ky) }; })
-  });
+  const nkT = monthly(CT_NK, "Tổng");
   h += panel({
-    span: "s12", title: "Nhập khẩu sợi cotton của Trung Quốc theo tháng", unit: axis.length ? axis[0].don_vi : "",
-    cadence: cadence(FREQ.month, axis.length ? kyFull(axis[axis.length - 1].ky) : "—", "ccf"),
-    body: axis.length ? chartBox({
-      kind: "line", xkind: "band", yDec: 0, yUnit: axis[0].don_vi, ttDec: 0, padL: 62,
-      xTicks: axis.map((r, i) => ({ x: i, label: kyTick(r.ky) })),
-      series: nkSer
-    }, 260) + legend([
-      { c: css("--series-1"), tk: "Tổng", n: "tổng nhập khẩu sợi cotton" },
-      { c: css("--series-4"), tk: "2/7 chi-số", n: "phần đã bóc tách được theo chi số sợi" }
-    ]) : panelMissing("Chưa có dữ liệu nhập khẩu theo tháng."),
-    note: "<b>Giới hạn phạm vi của đường thứ hai, nguyên văn từ bộ dữ liệu:</b> <span class=\"scope-chip\">" +
-      esc(CT_NK_CS || "—") + "</span> — tức đường này <b>không</b> phải toàn bộ cơ cấu chi số, mới bóc tách được " +
-      "2 trong 7 nhóm, nên khoảng cách giữa hai đường <b>không</b> đọc được thành \"các chi số còn lại\". " +
-      "Chuỗi chỉ mới có từ 01/2026."
+    span: "s12", title: "Nhập khẩu sợi cotton của Trung Quốc theo tháng", unit: nkT.length ? nkT[0].don_vi : "",
+    cadence: cadence(FREQ.month, nkT.length ? kyFull(nkT[nkT.length - 1].ky) : "—", "ccf"),
+    body: nkT.length ? chartBox({
+      kind: "line", xkind: "band", yDec: 0, yUnit: nkT[0].don_vi, ttDec: 0, padL: 62,
+      xTicks: monthTicks(nkT, 3), xTicksNarrow: monthTicks(nkT, 6),
+      series: [{
+        name: "Tổng nhập khẩu sợi cotton (Trung Quốc)", color: css("--series-1"), w: 2, endDot: true,
+        pts: nkT.map((r, i) => ({ x: i, v: r.khoi_luong, label: kyFull(r.ky) }))
+      }]
+    }, 260) : panelMissing("Chưa có dữ liệu nhập khẩu theo tháng."),
+    note: "Tổng nhập khẩu sợi cotton mọi chi số. " + (nkT.length ? "Chuỗi bắt đầu từ " + kyFull(nkT[0].ky) + ". " : "") +
+      "Cơ cấu theo chi số của chính khối lượng này nằm ở biểu đồ ngay dưới. Để trung tính về màu: Trung Quốc nhập nhiều sợi " +
+      "là cầu tốt cho sợi xuất khẩu nhưng cũng phản ánh nguồn cung cạnh tranh từ các nước khác."
   });
+
+  /* 19/10/2026: cơ cấu NK theo 8 nhóm chi số + "Khác" (khoá `phan2_chiso_thang`); snapshot cũ không có -> báo chưa có dữ liệu */
+  const CS = s.phan2_chiso_thang;
+  const csOk = !!(CS && Array.isArray(CS.months) && CS.months.length && Array.isArray(CS.groups) && CS.groups.length && CS.qty);
+  if (!csOk) {
+    h += panel({
+      span: "s12", title: "Cơ cấu nhập khẩu sợi cotton của Trung Quốc theo chi số — theo tháng",
+      cadence: cadence(FREQ.month, "—", "ccf"), body: panelMissing("Chưa có dữ liệu ở thời điểm này.")
+    });
+  } else {
+    /* nhãn ngắn (bỏ "– HS …"), mã HS, họ (chải thô/chải kỹ), chi số dưới để sắp tăng dần — đều suy từ nhãn trong dữ liệu */
+    const meta = CS.groups.map(gk => {
+      const lbl = String(gk);
+      const hsM = /HS\s*([0-9]+)/i.exec(lbl);
+      const short = lbl.replace(/\s*[–—-]\s*HS\s*[0-9]+.*$/i, "").trim();
+      const fam = /chải\s*kỹ/i.test(lbl) ? "ck" : "cd";
+      const lowM = /dưới\s*C\s*(\d+)/i.exec(lbl), rngM = /C\s*(\d+)\s*-\s*\d+\s*S/i.exec(lbl);
+      const lo = lowM ? +lowM[1] - 0.5 : rngM ? +rngM[1] : 999;
+      return { key: gk, short: short, hs: hsM ? hsM[1] : "", fam: fam, lo: lo, xe: /sợi\s*xe/i.test(lbl) ? 1 : 0,
+        high: /C\s*30\s*-\s*47\s*S/i.test(lbl) };
+    });
+    const famOrder = { cd: 0, ck: 1 };
+    meta.sort((a, b) => famOrder[a.fam] - famOrder[b.fam] || a.lo - b.lo || a.xe - b.xe);
+    const famIx = { cd: 0, ck: 0 };
+    meta.forEach(g => { const i = Math.min(++famIx[g.fam], 4); g.color = css("--cs-" + g.fam + "-" + i); });
+    const khacC = css("--ink3-panel");
+    const cm = CS.months, L = cm.length - 1, lastK = cm[L];
+    const num = (a, i) => (a && i >= 0 && typeof a[i] === "number") ? a[i] : null;
+    const totOf = (i) => num(CS.total_qty, i);
+    const shareOf = (keys, i) => {
+      const T = totOf(i);
+      if (!T) return null;
+      let v = 0;
+      for (const k of keys) { const q = num(CS.qty[k], i); if (q === null) return null; v += q; }
+      return v / T * 100;
+    };
+    const iPY = cm.indexOf((+String(lastK).slice(0, 4) - 1) + "-" + String(lastK).slice(5));
+    const T = totOf(L), T0 = totOf(iPY);
+    const big = meta.map(g => ({ g: g, v: num(CS.qty[g.key], L) })).filter(x => x.v !== null).sort((a, b) => b.v - a.v)[0];
+    const hiKeys = meta.filter(g => g.high).map(g => g.key);
+    const hiNow = hiKeys.length ? shareOf(hiKeys, L) : null, hiPY = hiKeys.length ? shareOf(hiKeys, iPY) : null;
+    const ckNow = shareOf(meta.filter(g => g.fam === "ck").map(g => g.key), L);
+    const cdNow = shareOf(meta.filter(g => g.fam === "cd").map(g => g.key), L);
+    const khNow = (T && num(CS.khac_qty, L) !== null) ? CS.khac_qty[L] / T * 100 : null;
+    const kyF = kyFull(lastK), kyPY = iPY >= 0 ? kyFull(cm[iPY]) : "";
+    const u = CS.unit || "";
+    let body = '<div class="tiles tiles-3">' +
+      '<div class="tile"><span class="tile-label">Tổng nhập khẩu · ' + esc(kyF) + '</span><span class="tile-value">' +
+      nInt(T) + '<span class="tile-unit">' + esc(u) + "</span></span>" +
+      deltaHtml(T !== null && T0 ? (T - T0) / T0 * 100 : null, 1, "% so " + kyPY, "neutral", 0.05) +
+      '<span class="tile-note">sợi cotton mọi chi số (HS 5205)</span></div>' +
+      '<div class="tile"><span class="tile-label">Nhóm lớn nhất · ' + esc(kyF) + '</span><span class="tile-value">' +
+      (big && T ? n2(big.v / T * 100, 1) : "—") + '<span class="tile-unit">%</span></span>' +
+      '<span class="tile-note" style="font-family:var(--font-ui);font-size:12px;color:var(--ink-2)">' + (big ? esc(big.g.short) : "—") + "</span>" +
+      '<span class="tile-note">' + (big ? nInt(big.v) + " " + esc(u) : "") + "</span></div>" +
+      '<div class="tile"><span class="tile-label">Chi số cao C30-47S (thô + kỹ) · ' + esc(kyF) + '</span><span class="tile-value">' +
+      (hiNow !== null ? n2(hiNow, 1) : "—") + '<span class="tile-unit">%</span></span>' +
+      deltaHtml(hiNow !== null && hiPY !== null ? hiNow - hiPY : null, 1, "điểm % so " + kyPY, "neutral", 0.05) +
+      '<span class="tile-note">' + (hiPY !== null ? "cùng kỳ " + kyPY + ": " + n2(hiPY, 1) + "%" : "") + "</span></div></div>" +
+      '<p class="chart-note" style="margin-top:10px"><b>Tháng ' + esc(kyF) + ":</b> chải kỹ <span class=\"mono\">" + n2(ckNow, 1) +
+      "%</span> · chải thô <span class=\"mono\">" + n2(cdNow, 1) + "%</span> · khác <span class=\"mono\">" + n2(khNow, 1) +
+      "%</span> tổng khối lượng.</p>";
+    body += '<div style="margin-top:14px">' + chartBox({
+      months: cm, order: meta, qty: CS.qty, khac: CS.khac_qty || [], total: CS.total_qty || [], unit: u, khacColor: khacC
+    }, 300, drawShareBars) + "</div>";
+    const legRow = (fam, title) => '<div style="display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;min-width:0">' +
+      '<span class="tile-label" style="min-width:64px">' + title + "</span>" +
+      legend(meta.filter(g => g.fam === fam).map(g => ({ c: g.color, n: g.short.replace(/^Chải\s*(thô|kỹ)\s*/i, ""), sq: true })))
+        .replace('class="legend"', 'class="legend" style="margin-top:0"') + "</div>";
+    body += '<div style="display:grid;gap:6px;margin-top:10px">' + legRow("cd", "Chải thô") + legRow("ck", "Chải kỹ") +
+      '<div style="display:flex;gap:14px;align-items:center"><span class="tile-label" style="min-width:64px"></span>' +
+      legend([{ c: khacC, n: "Khác", sq: true }]).replace('class="legend"', 'class="legend" style="margin-top:0"') + "</div></div>";
+    h += panel({
+      span: "s12", title: "Cơ cấu nhập khẩu sợi cotton của Trung Quốc theo chi số — theo tháng", unit: "% tổng khối lượng",
+      cadence: cadence(FREQ.month, kyF, "ccf", "số hải quan Trung Quốc"),
+      body: body,
+      note: (CS.note ? esc(String(CS.note).replace(/^Nguồn CCFGroup \(số hải quan TQ\)\.\s*/, "")) + " " : "") +
+        "Mỗi cột là 100% khối lượng nhập khẩu sợi cotton của tháng đó; khúc dưới cùng là chải thô chi số thấp, lên dần tới chải kỹ chi số cao, " +
+        "trên cùng là nhóm khác. Hai họ dùng hai tông màu, màu đậm là chi số thấp. Di chuột hoặc chạm vào một cột để xem số tấn, tỷ trọng và mã HS từng nhóm. " +
+        "Để trung tính về màu."
+    });
+  }
 
   /* ---- Đợt 1: NK theo xuất xứ / XK theo thị trường, THEO THÁNG (cột chồng top 6 + Khác) ---- */
   function monthStackPanel(o, cfg) {

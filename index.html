@@ -46,6 +46,9 @@
      bù bằng khe 1px giữa các khúc, chú giải đầy đủ và tooltip ghi tên + tấn + % từng nhóm. */
   --cs-cd-1:#2F6DB8; --cs-cd-2:#4A8FE0; --cs-cd-3:#7EB0EE; --cs-cd-4:#B4D1F5;
   --cs-ck-1:#B4531F; --cs-ck-2:#DD6A2F; --cs-ck-3:#EE9A68; --cs-ck-4:#F6C29E;
+  /* giá sợi TQ theo chủng loại (tab Sợi, 19/10/2026): 8 đường = series-1..6 + 2 màu bổ sung.
+     Rayon = lam ngọc (khác hẳn series-3 xanh lá về sắc độ), PE = xám xanh trung tính (sợi tổng hợp, nền so sánh). */
+  --sy-rayon:#4FC3CF; --sy-pe:#A8BACE;
 }
 .on-paper{
   --bg:var(--paper); --bg-2:var(--paper-2); --bg-3:var(--paper-3);
@@ -355,6 +358,7 @@ table.narrow thead th,table.narrow tbody td{padding:8px 7px;font-size:12px}
 /* ---------- chain rail (2.4) ---------- */
 .chain{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:start}
 .chain+.chain{margin-top:16px}
+.chain > div{min-width:0} /* 19/10/2026: bảng giá theo chủng loại không được đẩy trang rộng hơn màn hình điện thoại */
 .chain-step{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:18px;
   text-align:right;color:var(--ink3-paper)}
 .chain-step .n{font-family:var(--font-mono);font-size:11px}
@@ -1902,6 +1906,164 @@ function drawShareBars(el, cfg, h) {
   el.ontouchstart = (e) => { if (e.touches[0]) show(e.touches[0].clientX, e.touches[0].clientY); };
 }
 
+/* =====================================================================
+   Giá sợi Trung Quốc theo chủng loại (thêm 19/10/2026, phần 1 tab Sợi, bước 04)
+   8 đường cùng đơn vị, theo tuần. Cotton 32s nhấn mạnh (đối chiếu với sợi Việt Nam ở phần 4),
+   7 đường còn lại nhạt; rê chuột lên đường / dòng bảng / chú giải -> làm nổi đường đó.
+   ===================================================================== */
+function hexA(hex, a) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")";
+}
+/** thứ Hai của tuần ISO chứa ngày iso (UTC, ms) */
+function isoWeekKey(iso) { const t = ts(iso), dow = (new Date(t).getUTCDay() + 6) % 7; return t - dow * 86400000; }
+/** gom chuỗi về 1 điểm/tuần ISO = phiên cuối tuần (chuỗi đã theo tuần thì giữ nguyên) */
+function weeklyLast(o) {
+  const map = new Map();
+  for (let i = 0; i < o.d.length; i++) {
+    if (o.v[i] === null || o.v[i] === undefined) continue;
+    const k = isoWeekKey(o.d[i]), cur = map.get(k);
+    if (!cur || o.d[i] >= cur.d) map.set(k, { wk: k, d: o.d[i], v: o.v[i] });
+  }
+  return Array.from(map.values()).sort((a, b) => a.wk - b.wk);
+}
+function drawYarnMix(el, cfg, h) {
+  const narrow = (el.clientWidth || 320) < 560;
+  const emph = el._emph || null, top = emph || cfg.focus;
+  const series = cfg.items.map(it => {
+    const isTop = it.key === top, isFocus = it.key === cfg.focus;
+    const dim = !(isTop || isFocus);
+    return { key: it.key, name: it.name, ticker: it.tk, pts: it.pts, endDot: !dim,
+      color: dim ? hexA(it.color, emph ? 0.22 : 0.38) : it.color,
+      w: isTop ? 2.75 : isFocus ? 2 : 1.4 };
+  });
+  /* đường đang nổi bật vẽ sau cùng để nằm trên các đường khác */
+  series.sort((a, b) => (a.key === top) - (b.key === top));
+  drawChart(el, Object.assign({}, cfg.base, narrow ? { endLabels: false, padR: 14 } : {}, { series: series }), h);
+  el.querySelectorAll && document.querySelectorAll('[data-yc="' + el.id + '"]').forEach(r =>
+    r.classList.toggle("is-hi", r.dataset.ymix === emph));
+  const pick = (cx, cy) => {
+    const m = el._meta;
+    if (!m) return null;
+    const r = el.getBoundingClientRect(), mx = cx - r.left, my = cy - r.top;
+    const xv = m.x0 + (mx - m.padL) / m.iw * (m.x1 - m.x0);
+    let best = null;
+    m.cfg.series.forEach(sr => {
+      let p = null;
+      sr.pts.forEach(q => { if (q.v !== null && (!p || Math.abs(q.x - xv) < Math.abs(p.x - xv))) p = q; });
+      if (!p) return;
+      const dy = Math.abs(m.Y(p.v) - my);
+      if (!best || dy < best.dy) best = { dy: dy, k: sr.key };
+    });
+    return best && best.dy < 22 ? best.k : null;
+  };
+  const move = (cx, cy) => {
+    const k = pick(cx, cy);
+    if (k !== (el._emph || null)) { el._emph = k; drawYarnMix(el, cfg, h); }
+    onMove({ currentTarget: el, clientX: cx, clientY: cy });
+  };
+  el.onmousemove = (ev) => move(ev.clientX, ev.clientY);
+  el.onmouseleave = () => { hideTT(); if (el._emph) { el._emph = null; drawYarnMix(el, cfg, h); } };
+  el.ontouchstart = (e) => { if (e.touches[0]) move(e.touches[0].clientX, e.touches[0].clientY); };
+}
+/* rê chuột / chạm vào dòng bảng hoặc mục chú giải -> làm nổi đúng đường trên biểu đồ */
+function yarnHi(row, on) {
+  const el = document.getElementById(row.dataset.yc);
+  const c = el && CHARTS.find(x => x.id === el.id);
+  if (!c) return;
+  el._emph = on ? row.dataset.ymix : null;
+  drawYarnMix(el, c.cfg, c.h);
+}
+document.addEventListener("mouseover", (e) => {
+  const r = e.target.closest && e.target.closest("[data-ymix]");
+  if (r && !r.contains(e.relatedTarget)) yarnHi(r, true);
+});
+document.addEventListener("mouseout", (e) => {
+  const r = e.target.closest && e.target.closest("[data-ymix]");
+  if (r && !r.contains(e.relatedTarget)) yarnHi(r, false);
+});
+document.addEventListener("focusin", (e) => { const r = e.target.closest && e.target.closest("[data-ymix]"); if (r) yarnHi(r, true); });
+document.addEventListener("focusout", (e) => { const r = e.target.closest && e.target.closest("[data-ymix]"); if (r) yarnHi(r, false); });
+
+function yarnMixPanel(P1, G, PE, has, uAll) {
+  const GC = P1.gia_chungloai || {};
+  const title = "Giá sợi Trung Quốc theo chủng loại" + chip("CHỈ Trung Quốc · nội địa");
+  const mixKeys = ["oe_10s", "c21s_airjet", "ck_40s", "ck_60s_compact", "tc_32s", "rayon_30s"];
+  if (!mixKeys.some(k => has(GC[k])))
+    return panel({ span: "", title: title, cadence: cadence(FREQ.week, "—", "ccf"),
+      body: panelMissing("Chưa có dữ liệu ở thời điểm này.") });
+  const SPEC = [
+    ["oe_10s", GC.oe_10s, "OE 10s", "Sợi OE 10s", "--series-4"],
+    ["c21s_airjet", GC.c21s_airjet, "21s AJ", "Sợi 21s air-jet", "--series-3"],
+    ["cn_32s", G.cn_32s, "32s", "Sợi cotton 32s", "--series-2"],
+    ["ck_40s", GC.ck_40s, "CK 40s", "Sợi chải kỹ 40s", "--series-1"],
+    ["ck_60s_compact", GC.ck_60s_compact, "CK 60s", "Sợi chải kỹ compact 60s", "--series-6"],
+    ["tc_32s", GC.tc_32s, "TC 32s", "Sợi TC 32s (65/35)", "--series-5"],
+    ["rayon_30s", GC.rayon_30s, "Rayon", "Sợi rayon 30s", "--sy-rayon"],
+    ["pe_32s", PE.price_32s, "PE 32s", "Sợi PE 32s", "--sy-pe"]
+  ].filter(x => has(x[1]));
+  const W = {};
+  SPEC.forEach(x => { W[x[0]] = weeklyLast(x[1]); });
+  /* nhãn tuần chung: ngày phiên cuối muộn nhất của tuần đó trên mọi chuỗi -> tooltip gom đủ 8 dòng */
+  const wkEnd = new Map();
+  Object.values(W).forEach(a => a.forEach(p => { if (!wkEnd.has(p.wk) || p.d > wkEnd.get(p.wk)) wkEnd.set(p.wk, p.d); }));
+  const lastWk = Math.max.apply(null, Array.from(wkEnd.keys())), prevWk = lastWk - 28 * 86400000;
+  const at = (k, wk) => { const p = (W[k] || []).find(q => q.wk === wk); return p ? p.v : null; };
+  const items = SPEC.map(x => ({
+    key: x[0], tk: x[2], name: x[3], color: css(x[4]),
+    pts: W[x[0]].map(p => ({ x: p.wk, v: p.v, label: "Tuần kết thúc " + dmy(wkEnd.get(p.wk)) }))
+  }));
+  const unit = uAll(SPEC.map(x => x[1]));
+  const x0 = Math.min.apply(null, Array.from(wkEnd.keys()));
+  const chart = chartBox({
+    focus: "cn_32s", items: items,
+    base: { kind: "line", xkind: "time", yDec: 0, yUnit: unit, ttDec: 0, endLabels: true, endLabelValue: 0,
+      padR: 108, padL: 56, extremes: false, xTicks: timeTicks(x0, lastWk, 7), xTicksNarrow: timeTicks(x0, lastWk, 4) }
+  }, 340, drawYarnMix);
+  const cid = "c" + CID;
+  /* bảng: giá tuần gần nhất + % so 4 tuần trước, xếp theo giá giảm dần */
+  const rows = SPEC.map(x => {
+    const a = W[x[0]], last = a[a.length - 1], p4 = (W[x[0]] || []).find(q => q.wk === last.wk - 28 * 86400000);
+    return { x: x, last: last, pct: p4 && p4.v ? (last.v - p4.v) / p4.v * 100 : null };
+  }).sort((a, b) => b.last.v - a.last.v);
+  let tb = '<div class="table-wrap" style="margin-top:14px"><table class="narrow"><thead><tr><th>Chủng loại</th>' +
+    "<th>Giá tuần gần nhất</th><th>So 4 tuần trước</th><th>Phiên cuối tuần</th></tr></thead><tbody>";
+  rows.forEach(r => {
+    const c = css(r.x[4]), isF = r.x[0] === "cn_32s";
+    tb += '<tr data-ymix="' + r.x[0] + '" data-yc="' + cid + '" tabindex="0"' + ' style="cursor:default">' +
+      '<td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px;vertical-align:-1px;background:' +
+      c + '"></span>' + (isF ? "<b>" + esc(r.x[3]) + "</b>" : esc(r.x[3])) + "</td>" +
+      "<td>" + nInt(r.last.v) + "</td><td>" + deltaHtml(r.pct, 1, "%", "neutral", 0.05) + "</td><td>" + dmy(r.last.d) + "</td></tr>";
+  });
+  tb += "</tbody></table></div>";
+  /* dòng phụ: 2 chênh lệch cùng tuần */
+  const spread = (a, b, lbl) => {
+    const v = (at(a, lastWk) !== null && at(b, lastWk) !== null) ? at(a, lastWk) - at(b, lastWk) : null;
+    const v0 = (at(a, prevWk) !== null && at(b, prevWk) !== null) ? at(a, prevWk) - at(b, prevWk) : null;
+    return '<span style="white-space:nowrap">' + lbl + ': <b class="mono" style="color:var(--ink-1)">' + nInt(v) + "</b> " + esc(unit) + "</span>" +
+      (v !== null && v0 !== null ? ' <span class="mono" style="color:var(--ink-3)">(4 tuần trước ' + nInt(v0) + ")</span>" : "");
+  };
+  const sp = '<p class="chart-note" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 18px"><b>Chênh lệch tuần ' +
+    esc(dmy(wkEnd.get(lastWk))) + ":</b> " + spread("ck_40s", "cn_32s", "chải kỹ 40s − cotton 32s") + " · " +
+    spread("tc_32s", "pe_32s", "TC 32s − PE 32s") + "</p>";
+  const leg = '<div class="legend">' + items.map(it =>
+    '<span class="it" data-ymix="' + it.key + '" data-yc="' + cid + '" tabindex="0" style="cursor:default">' +
+    '<span class="sw" style="background:' + it.color + (it.key === "cn_32s" ? ";height:3.5px" : "") + '"></span>' +
+    '<span class="tk">' + esc(it.tk) + "</span> " + esc(it.name) + "</span>").join("") + "</div>";
+  const lastD = wkEnd.get(lastWk);
+  return panel({
+    span: "", title: title, unit: unit,
+    cadence: cadence(FREQ.week, dmy(lastD), "ccf"),
+    body: chart + leg + tb + sp,
+    note: (P1.gia_chungloai_note ? esc(P1.gia_chungloai_note) + " " : "") + "Số theo tuần (giá phiên cuối tuần). " +
+      "Cotton 32s và PE 32s vốn là chuỗi theo ngày ở các biểu đồ trên, ở đây lấy giá phiên cuối mỗi tuần để cùng nhịp với sáu chuỗi còn lại. " +
+      "Đường <b>cotton 32s</b> vẽ đậm để đối chiếu với sợi Việt Nam ở phần 4; rê chuột lên một đường, một dòng bảng hoặc mục chú giải để làm nổi đường đó. " +
+      "Tám chuỗi cùng đơn vị nên chung một trục, không quy đổi sang USD. Để trung tính về màu."
+  });
+}
+
 function viewSoi() {
   const s = DATA.soi;
   if (!s) return noData("Sợi");
@@ -2137,7 +2299,12 @@ function viewSoi() {
     });
   }
   if (!peInner) peInner = panel({ span: "", title: "Tham chiếu sợi PE Trung Quốc" + peChip, body: panelMissing("Chưa có dữ liệu.") });
-  h += step("03", "Tham chiếu PE", '<div style="display:grid;gap:16px">' + peInner + "</div>", true);
+  h += step("03", "Tham chiếu PE", '<div style="display:grid;gap:16px">' + peInner + "</div>");
+
+  /* 04 — giá sợi Trung Quốc theo chủng loại (thêm 19/10/2026). 6 chuỗi `gia_chungloai` là số THEO TUẦN;
+     cotton 32s và PE 32s là chuỗi theo NGÀY có sẵn ở trên -> lấy giá phiên cuối mỗi tuần ISO để cùng nhịp.
+     Snapshot cũ không có `gia_chungloai` -> panel báo chưa có dữ liệu. */
+  h += step("04", "Theo chủng loại", yarnMixPanel(P1, G, PE, has, uAll), true);
   h += "</div>";
 
   /* =================== PHẦN 2 — CUNG–CẦU TRUNG QUỐC =================== */
